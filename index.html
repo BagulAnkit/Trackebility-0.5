@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>TRACKEBILITY — Your Study. Your Progress. Your Exam.</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Lora:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Quicksand:wght@500;600;700&family=Roboto+Mono:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,700;1,6..72,500&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            themeBg: 'var(--bg-color)',
+            themeCard: 'var(--card-color)',
+            themeCardSoft: 'var(--card-soft-color)',
+            themeBorder: 'var(--border-color)',
+            themeAccent: 'var(--accent-color)',
+            themeAccentGlow: 'var(--accent-glow)',
+            themeText: 'var(--text-color)',
+            themeMuted: 'var(--muted-color)',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-color: #090d16;
+      --card-color: #111726;
+      --card-soft-color: #1b2337;
+      --border-color: #242f47;
+      --accent-color: #6366f1;
+      --accent-secondary: #ec4899;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --text-color: #f8fafc;
+      --muted-color: #94a3b8;
+      --app-font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --heading-font: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+      --mono-font: 'JetBrains Mono', 'Roboto Mono', monospace;
+      --font-scale: 1;
+    }
+    body.dark-obsidian {
+      --bg-color:#0b0f19; --card-color:#121828; --card-soft-color:#1e263d; --border-color:#2b3652;
+      --accent-color:#6366f1; --accent-secondary:#8b5cf6; --accent-glow:rgba(99,102,241,.30); --text-color:#f8fafc; --muted-color:#94a3b8;
+    }
+    body.dark-oled {
+      --bg-color:#000; --card-color:#09090b; --card-soft-color:#141417; --border-color:#222226;
+      --accent-color:#a855f7; --accent-secondary:#ec4899; --accent-glow:rgba(168,85,247,.25); --text-color:#fff; --muted-color:#a1a1aa;
+    }
+    body.dark-burgundy {
+      --bg-color:#120407; --card-color:#1c070c; --card-soft-color:#2b0c14; --border-color:#481422;
+      --accent-color:#f43f5e; --accent-secondary:#fb7185; --accent-glow:rgba(244,63,94,.30); --text-color:#ffe4e6; --muted-color:#fda4af;
+    }
+    body.dark-emerald {
+      --bg-color:#04130c; --card-color:#092016; --card-soft-color:#103224; --border-color:#1a4a36;
+      --accent-color:#10b981; --accent-secondary:#34d399; --accent-glow:rgba(16,185,129,.25); --text-color:#ecfdf5; --muted-color:#6ee7b7;
+    }
+    body.nord-dark {
+      --bg-color:#2e3440; --card-color:#3b4252; --card-soft-color:#434c5e; --border-color:#4c566a;
+      --accent-color:#88c0d0; --accent-secondary:#b48ead; --accent-glow:rgba(136,192,208,.25); --text-color:#eceff4; --muted-color:#d8dee9;
+    }
+    body.catppuccin-mocha {
+      --bg-color:#1e1e2e; --card-color:#313244; --card-soft-color:#45475a; --border-color:#585b70;
+      --accent-color:#cba6f7; --accent-secondary:#a6e3a1; --accent-glow:rgba(203,166,247,.25); --text-color:#cdd6f4; --muted-color:#a6adc8;
+    }
+    body.solarized-dark {
+      --bg-color:#002b36; --card-color:#073642; --card-soft-color:#0b3b46; --border-color:#28545e;
+      --accent-color:#b58900; --accent-secondary:#2aa198; --accent-glow:rgba(181,137,0,.25); --text-color:#eee8d5; --muted-color:#839496;
+    }
+    body.solarized-light {
+      --bg-color:#fdf6e3; --card-color:#eee8d5; --card-soft-color:#e5dfcc; --border-color:#d6cfba;
+      --accent-color:#268bd2; --accent-secondary:#2aa198; --accent-glow:rgba(38,139,210,.18); --text-color:#586e75; --muted-color:#657b83;
+    }
+    body.dracula {
+      --bg-color:#282a36; --card-color:#343746; --card-soft-color:#44475a; --border-color:#6272a4;
+      --accent-color:#bd93f9; --accent-secondary:#ff79c6; --accent-glow:rgba(189,147,249,.25); --text-color:#f8f8f2; --muted-color:#bfc3d0;
+    }
+    body.theme-light {
+      --bg-color:#f8fafc; --card-color:#fff; --card-soft-color:#f1f5f9; --border-color:#e2e8f0;
+      --accent-color:#6366f1; --accent-secondary:#ec4899; --accent-glow:rgba(99,102,241,.15); --text-color:#0f172a; --muted-color:#64748b;
+    }
+    body.theme-warm {
+      --bg-color:#faf6f0; --card-color:#fff; --card-soft-color:#f3ece2; --border-color:#e6ded3;
+      --accent-color:#d97706; --accent-secondary:#b45309; --accent-glow:rgba(217,119,6,.20); --text-color:#292524; --muted-color:#78716c;
+    }
+
+    body.font-plus-jakarta { --app-font:'Plus Jakarta Sans',system-ui,sans-serif; }
+    body.font-inter { --app-font:'Inter',system-ui,sans-serif; }
+    body.font-dm-sans { --app-font:'DM Sans',system-ui,sans-serif; }
+    body.font-nunito { --app-font:'Nunito Sans',system-ui,sans-serif; }
+    body.font-source { --app-font:'Source Sans 3',system-ui,sans-serif; }
+    body.font-rounded { --app-font:'Quicksand',system-ui,sans-serif; }
+    body.font-serif { --app-font:'Newsreader',Georgia,serif; }
+
+    body.heading-space { --heading-font:'Space Grotesk','Plus Jakarta Sans',sans-serif; }
+    body.heading-playfair { --heading-font:'Playfair Display',Georgia,serif; }
+    body.heading-lora { --heading-font:'Lora',Georgia,serif; }
+    body.heading-jakarta { --heading-font:'Plus Jakarta Sans',system-ui,sans-serif; }
+
+    body.font-size-small { --font-scale:.90; }
+    body.font-size-normal { --font-scale:1; }
+    body.font-size-large { --font-scale:1.10; }
+    body.font-size-xl { --font-scale:1.20; }
+
+    body {
+      font-family: var(--app-font);
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html { font-size: calc(16px * var(--font-scale)); }
+    h1,h2,h3,h4,h5,h6,.heading-font { font-family: var(--heading-font); }
+    .font-mono, #focusTimerDisplay, #fullscreenTimerDisplay, #homeCountdownPrecisionTicker { font-family: var(--mono-font) !important; font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+    .theme-preview { transition: transform .15s ease, border-color .15s ease; }
+    .theme-preview:active { transform: scale(.97); }
+
+    .custom-scroll::-webkit-scrollbar { display: none; }
+    .custom-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .toast-animate-in { animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .toast-animate-out { animation: toastOut 0.2s ease-in forwards; }
+    @keyframes toastIn { from { transform: translate(-50%, 20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+    @keyframes toastOut { from { transform: translate(-50%, 0); opacity: 1; } to { transform: translate(-50%, 15px); opacity: 0; } }
+  </style>
+</head>
+<body class="dark-obsidian h-screen overflow-hidden flex flex-col antialiased">
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none w-full max-w-xs px-4"></div>
+
+  <!-- TOP APP BAR -->
+  <header class="flex items-center justify-between px-4 pt-3.5 pb-2.5 shrink-0 border-b border-themeBorder bg-themeCard/90 backdrop-blur-md z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-2xl bg-white border border-themeBorder shadow-lg overflow-hidden flex items-center justify-center shrink-0" title="TRACKEBILITY">
+        <img src="data:image/png;base64,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rqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqvrtKrqrvrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqroqqrsqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqsqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqrqv`]}
