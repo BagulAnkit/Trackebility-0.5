@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TRACKEBILITY</title>
+  <!-- Confetti Engine -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #121316;
+      --bg-card: #1c1d22;
+      --bg-elevated: #26272e;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-orange: #f97316;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-subtle: #2d2f36;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      padding: 16px;
+      padding-bottom: 90px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    /* Top Bar */
+    .top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .brand-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--accent-orange);
+    }
+    .date-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .user-greeting {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* Countdown Card */
+    .countdown-card {
+      background: linear-gradient(135deg, #1e2029 0%, #15161b 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .countdown-subhead {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .countdown-days {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #fff;
+    }
+    .countdown-days span {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-blue);
+      letter-spacing: 0.04em;
+    }
+    .countdown-timer {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .target-tag {
+      text-align: right;
+    }
+    .target-tag .exam-name {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .target-tag .exam-date {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Focus Card */
+    .focus-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .focus-time {
+      font-size: 1.7rem;
+      font-weight: 800;
+      margin: 4px 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .btn-focus {
+      background: #4338ca;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-focus:active {
+      transform: scale(0.97);
+    }
+
+    /* Rings & Progress Section */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .progress-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    /* SVG Progress Ring Styles */
+    .ring-wrapper {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 6px 0;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-track {
+      stroke: var(--bg-elevated);
+    }
+    .progress-ring-circle {
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ring-center-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .ring-center-val {
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+    .ring-center-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    /* MCQ Quick Action Buttons */
+    .stepper-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .btn-step {
+      background: var(--bg-elevated);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-step:active {
+      background: #32353f;
+    }
+
+    /* Streak Bar */
+    .streak-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .streak-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-orange);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .streak-progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-elevated);
+      border-radius: 999px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .streak-progress-fill {
+      width: 50%;
+      height: 100%;
+      background: var(--accent-orange);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* Task List Section */
+    .tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .task-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      transition: background 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .task-item.completed {
+      background: rgba(16, 185, 129, 0.07);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .task-checkbox {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #52525b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .task-item.completed .task-checkbox {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+    .task-checkbox svg {
+      display: none;
+      width: 14px;
+      height: 14px;
+      fill: #fff;
+    }
+    .task-item.completed .task-checkbox svg {
+      display: block;
+    }
+    .task-title {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-main);
+      transition: color 0.2s;
+    }
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .task-time {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Bottom Navigation */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: #141519ee;
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-btn.active {
+      color: var(--accent-blue);
+    }
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Brand & Header -->
+  <div class="top-header">
+    <div>
+      <div class="brand-title">TRACKEBILITY</div>
+      <div class="user-greeting">Ready to lock in? 🔥</div>
+    </div>
+    <div class="date-label" id="live-date">Thu, Sep 17</div>
+  </div>
+
+  <!-- Exam Countdown -->
+  <div class="countdown-card">
+    <div>
+      <div class="countdown-subhead">Exam Countdown</div>
+      <div class="countdown-days"><span id="cd-days">256</span> <span>DAYS LEFT</span></div>
+      <div class="countdown-timer" id="cd-timer">23h 39m 11s</div>
+    </div>
+    <div class="target-tag">
+      <div class="countdown-subhead">TARGET</div>
+      <div class="exam-name">NEET PG</div>
+      <div class="exam-date">Target: June 2027</div>
+    </div>
+  </div>
+
+  <!-- Focus Timer Bar -->
+  <div class="focus-card">
+    <div>
+      <div class="countdown-subhead" style="color: #ef4444;">● Today's Focus</div>
+      <div class="focus-time" id="focus-display">00:00:00</div>
+      <div class="countdown-subhead" id="focus-sub">Goal: 6h 00m</div>
+    </div>
+    <button class="btn-focus" id="timer-toggle-btn" onclick="toggleTimer()">
+      <span id="timer-icon">▶</span> <span id="timer-btn-text">Start Focus</span>
+    </button>
+  </div>
+
+  <!-- Progress Rings -->
+  <div class="section-title">Daily Milestones</div>
+  <div class="progress-row">
+    
+    <!-- MCQ Card with Ring -->
+    <div class="metric-card">
+      <div class="countdown-subhead">MCQ Target</div>
+      <div class="ring-wrapper">
+        <svg class="progress-ring" width="100" height="100">
+          <circle class="progress-ring-track" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+          <circle id="ring-mcq" class="progress-ring-circle" stroke="#3b82f6" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+        </svg>
+        <div class="ring-center-content">
+          <div class="ring-center-val" id="mcq-val">8</div>
+          <div class="ring-center-sub">/ 50 MCQs</div>
+        </div>
+      </div>
+      <div class="stepper-row">
+        <button class="btn-step" onclick="adjustMCQ(-5)">-5</button>
+        <button class="btn-step" onclick="adjustMCQ(1)">+1</button>
+        <button class="btn-step" onclick="adjustMCQ(10)">+10</button>
+      </div>
+    </div>
+
+    <!-- Task Progress Ring -->
+    <div class="metric-card">
+      <div class="countdown-subhead">Tasks Done</div>
+      <div class="ring-wrapper">
+        <svg class="progress-ring" width="100" height="100">
+          <circle class="progress-ring-track" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+          <circle id="ring-task" class="progress-ring-circle" stroke="#10b981" stroke-width="8" fill="transparent" r="40" cx="50" cy="50"/>
+        </svg>
+        <div class="ring-center-content">
+          <div class="ring-center-val" id="task-val">1/3</div>
+          <div class="ring-center-sub" id="task-pct">33%</div>
+        </div>
+      </div>
+      <div class="countdown-subhead" style="margin-top: 10px; color: var(--accent-green);">Keep Pushing!</div>
+    </div>
+
+  </div>
+
+  <!-- Active Streak -->
+  <div class="streak-card">
+    <div style="width: 100%;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="streak-title">🔥 7 Day Active Streak</span>
+        <span class="countdown-subhead">Goal: 14 Days</span>
+      </div>
+      <div class="streak-progress-track">
+        <div class="streak-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Task Schedule List -->
+  <div class="tasks-header">
+    <div class="section-title" style="margin-bottom: 0;">Today's Schedule</div>
+    <span class="countdown-subhead" id="schedule-counter">1 of 3 Done</span>
+  </div>
+
+  <div class="task-item completed" onclick="toggleTask(this)">
+    <div class="task-checkbox">
+      <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+    </div>
+    <div>
+      <div class="task-title">Solve INICET Ortho PYQs</div>
+      <div class="task-time">Completed • High Yield</div>
+    </div>
+  </div>
+
+  <div class="task-item" onclick="toggleTask(this)">
+    <div class="task-checkbox">
+      <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+    </div>
+    <div>
+      <div class="task-title">Read Surgery notes part 1</div>
+      <div class="task-time">09:00 AM - 10:00 AM [SU]</div>
+    </div>
+  </div>
+
+  <div class="task-item" onclick="toggleTask(this)">
+    <div class="task-checkbox">
+      <svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+    </div>
+    <div>
+      <div class="task-title">Solve MCQ with surgical instruments</div>
+      <div class="task-time">10:30 AM - 11:30 AM [SU]</div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-bar">
+    <div class="nav-btn active">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>HOME</span>
+    </div>
+    <div class="nav-btn">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm1 14.5h-2V11h2zm0-6.5h-2V7h2z"/></svg>
+      <span>FOCUS</span>
+    </div>
+    <div class="nav-btn">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span>TASKS</span>
+    </div>
+    <div class="nav-btn">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2zm4 0h-2V7h2zm4 0h-2v-4h2z"/></svg>
+      <span>STATS</span>
+    </div>
+  </nav>
+
+  <script>
+    // --- CONFETTI CELEBRATION ---
+    function shootConfetti() {
+      confetti({
+        particleCount: 80,
+        spread: 65,
+        origin: { y: 0.75 },
+        colors: ['#3b82f6', '#10b981', '#f97316', '#a855f7']
+      });
+    }
+
+    // --- CIRCLE RING SETUP ---
+    const ringRadius = 40;
+    const ringCircumference = 2 * Math.PI * ringRadius; // ~251.32
+
+    function setupRing(elementId) {
+      const ring = document.getElementById(elementId);
+      ring.style.strokeDasharray = `${ringCircumference} ${ringCircumference}`;
+      ring.style.strokeDashoffset = ringCircumference;
+    }
+
+    function setRingProgress(elementId, percent) {
+      const ring = document.getElementById(elementId);
+      const clampedPct = Math.min(Math.max(percent, 0), 100);
+      const offset = ringCircumference - (clampedPct / 100) * ringCircumference;
+      ring.style.strokeDashoffset = offset;
+    }
+
+    setupRing('ring-mcq');
+    setupRing('ring-task');
+
+    // --- MCQ COUNTER ---
+    let currentMCQ = 8;
+    const targetMCQ = 50;
+
+    function updateMCQView() {
+      document.getElementById('mcq-val').innerText = currentMCQ;
+      const pct = (currentMCQ / targetMCQ) * 100;
+      setRingProgress('ring-mcq', pct);
+    }
+
+    function adjustMCQ(amount) {
+      currentMCQ = Math.max(0, currentMCQ + amount);
+      updateMCQView();
+      if (amount > 0) shootConfetti();
+    }
+    updateMCQView();
+
+    // --- TASK COMPLETION ---
+    function updateTaskProgress() {
+      const totalTasks = document.querySelectorAll('.task-item').length;
+      const doneTasks = document.querySelectorAll('.task-item.completed').length;
+      const pct = Math.round((doneTasks / totalTasks) * 100);
+
+      document.getElementById('task-val').innerText = `${doneTasks}/${totalTasks}`;
+      document.getElementById('task-pct').innerText = `${pct}%`;
+      document.getElementById('schedule-counter').innerText = `${doneTasks} of ${totalTasks} Done`;
+      setRingProgress('ring-task', pct);
+
+      if (doneTasks === totalTasks && totalTasks > 0) {
+        shootConfetti();
+      }
+    }
+
+    function toggleTask(element) {
+      element.classList.toggle('completed');
+      if (element.classList.contains('completed')) {
+        shootConfetti();
+      }
+      updateTaskProgress();
+    }
+    updateTaskProgress();
+
+    // --- FOCUS STOPWATCH ---
+    let timerInterval = null;
+    let timerSeconds = 0;
+
+    function formatTimer(sec) {
+      const h = String(Math.floor(sec / 3600)).padStart(2, '0');
+      const m = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+      const s = String(sec % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function toggleTimer() {
+      const btnText = document.getElementById('timer-btn-text');
+      const btnIcon = document.getElementById('timer-icon');
+      const btn = document.getElementById('timer-toggle-btn');
+
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        btnText.innerText = 'Resume';
+        btnIcon.innerText = '▶';
+        btn.style.background = '#4338ca';
+      } else {
+        timerInterval = setInterval(() => {
+          timerSeconds++;
+          document.getElementById('focus-display').innerText = formatTimer(timerSeconds);
+        }, 1000);
+        btnText.innerText = 'Pause';
+        btnIcon.innerText = '⏸';
+        btn.style.background = '#e11d48';
+      }
+    }
+  </script>
+</body>
+</html>
