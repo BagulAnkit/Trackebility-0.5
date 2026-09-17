@@ -4835,5 +4835,290 @@
   document.addEventListener('DOMContentLoaded',function(){try{statsDate=dateOf(ymd(new Date()));statsWeekCursor=new Date(statsDate);renderStatistics();}catch(e){console.error('Daily stats init',e);}});
 })();
 </script>
+
+
+<!-- ============================================================
+     TRACKEBILITY FINAL TRACKER / STATS POLISH
+     ============================================================ -->
+<style id="trackability-final-tracker-polish">
+  .tb-week-calendar{background:var(--card-color);border:1px solid var(--border-color);border-radius:22px;padding:12px;}
+  .tb-week-strip{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 1px 5px;}
+  .tb-week-strip::-webkit-scrollbar{display:none;}
+  .tb-week-day{flex:0 0 62px;min-height:66px;border:1px solid var(--border-color);background:var(--card-soft);color:var(--text-color);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;}
+  .tb-week-day.selected{background:var(--accent-color);border-color:var(--accent-color);color:#fff;box-shadow:0 7px 20px color-mix(in srgb,var(--accent-color) 28%,transparent);}
+  .tb-week-day.today:not(.selected){border-color:var(--accent-color);color:var(--accent-color);}
+  .tb-week-day .tb-dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8;}
+  .tb-expanded-month{margin-top:8px;padding-top:10px;border-top:1px solid var(--border-color);}
+  .tb-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
+  .tb-month-day{min-height:38px;border:1px solid var(--border-color);background:var(--card-soft);color:var(--text-color);border-radius:11px;font-size:10px;font-weight:800;}
+  .tb-month-day.selected{background:var(--accent-color);border-color:var(--accent-color);color:#fff;}
+  .tb-month-day.today:not(.selected){border-color:var(--accent-color);color:var(--accent-color);}
+  .tb-month-day.has-data::after{content:'•';display:block;font-size:8px;line-height:6px;opacity:.8;}
+  .tb-calendar-actions{display:flex;align-items:center;justify-content:center;margin-top:5px;}
+  .tb-calendar-btn{padding:6px 10px;border-radius:10px;background:var(--card-soft);border:1px solid var(--border-color);color:var(--accent-color);font-size:9px;font-weight:900;}
+  .tb-sleep-chart-wrap{display:flex;gap:8px;min-height:190px;overflow-x:auto;padding:10px 4px 4px;scrollbar-width:thin;}
+  .tb-sleep-yaxis{flex:0 0 28px;display:flex;flex-direction:column;justify-content:space-between;height:160px;padding:1px 0 18px;color:var(--muted-color);font:800 8px/1 var(--font-mono,monospace);text-align:right;}
+  .tb-sleep-plot{position:relative;flex:1 0 auto;min-width:calc(100% - 36px);height:160px;border-left:1px solid var(--border-color);border-bottom:1px solid var(--border-color);background:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,color-mix(in srgb,var(--border-color) 45%,transparent) 32px);}
+  .tb-sleep-bars{height:100%;display:flex;align-items:flex-end;gap:8px;padding:0 8px;}
+  .tb-sleep-bar-col{width:24px;flex:0 0 24px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;}
+  .tb-sleep-bar{width:19px;min-height:3px;border-radius:7px 7px 3px 3px;opacity:.95;}
+  .tb-sleep-bar.green{background:#22c55e;}
+  .tb-sleep-bar.yellow{background:#eab308;}
+  .tb-sleep-bar.red{background:#ef4444;}
+  .tb-sleep-bar.mid{background:#f97316;}
+  .tb-sleep-bar-label{font-size:8px;font-weight:900;color:var(--text-color);margin-bottom:3px;}
+  .tb-sleep-date{font-size:8px;font-weight:800;color:var(--muted-color);margin-top:4px;}
+  .tb-sleep-legend{display:flex;gap:9px;flex-wrap:wrap;font-size:8px;font-weight:800;color:var(--muted-color);}
+  .tb-sleep-legend span{display:inline-flex;align-items:center;gap:3px;}
+  .tb-sleep-legend i{width:7px;height:7px;border-radius:2px;display:inline-block;}
+  .tb-sleep-legend .g{background:#22c55e}.tb-sleep-legend .y{background:#eab308}.tb-sleep-legend .o{background:#f97316}.tb-sleep-legend .r{background:#ef4444}
+  .tb-subject-group{border:1px solid var(--border-color);background:var(--card-color);border-radius:22px;padding:11px;}
+  .tb-subject-group-head{display:flex;align-items:center;gap:8px;padding-bottom:8px;margin-bottom:7px;border-bottom:1px solid var(--border-color);}
+  .tb-subject-group-list{display:flex;flex-direction:column;gap:7px;}
+  .tb-daily-gt-chart{overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;}
+  .tb-daily-gt-chart svg{display:block;min-width:520px;}
+</style>
+<script id="trackability-final-tracker-polish-script">
+(function(){
+  'use strict';
+  const pad=n=>String(n).padStart(2,'0');
+  const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const today=()=>ymd(new Date());
+  const dateOf=v=>new Date((v||today())+'T00:00:00');
+  const escF=v=>window.escapeHtml?window.escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const getSub=id=>(appState.subjects||[]).find(s=>s.id===id);
+  const monthText=d=>d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const startWeek=d=>{const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()-(day===0?6:day-1));x.setHours(0,0,0,0);return x;};
+  const hasDate=(logs,date)=>logs.some(x=>String(x.date||'')===date);
+  const calState=window.__tbTrackerCalendarState=window.__tbTrackerCalendarState||{};
+
+  function ensureCal(kind,selected){
+    const d=dateOf(selected||today());
+    if(!calState[kind])calState[kind]={cursor:new Date(d),expanded:false};
+    if(!calState[kind].cursor)calState[kind].cursor=new Date(d);
+    return calState[kind];
+  }
+  function calendarHTML(kind,selected,logs){
+    const st=ensureCal(kind,selected), cursor=st.cursor;
+    const ws=startWeek(cursor), days=[];
+    for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);days.push(d);}
+    const labels=days.map(d=>{const date=ymd(d),sel=date===selected,t=date===today(),has=hasDate(logs,date);return `<button type="button" class="tb-week-day ${sel?'selected ':''}${t?'today ':''}" onclick="tbSelectTrackerDate('${kind}','${date}')"><span class="text-[8px] uppercase">${d.toLocaleDateString('en-US',{weekday:'short'})}</span><strong class="text-base">${d.getDate()}</strong><span class="text-[7px] opacity-80">${d.toLocaleDateString('en-US',{month:'short'})}</span><span class="tb-dot" style="visibility:${has?'visible':'hidden'}"></span></button>`;}).join('');
+    let expanded='';
+    if(st.expanded){
+      const m=new Date(cursor.getFullYear(),cursor.getMonth(),1),first=(m.getDay()+6)%7,nd=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+      let cells='';for(let i=0;i<first;i++)cells+='<span></span>';
+      for(let day=1;day<=nd;day++){const x=new Date(m.getFullYear(),m.getMonth(),day),date=ymd(x),sel=date===selected,t=date===today(),has=hasDate(logs,date);cells+=`<button type="button" class="tb-month-day ${sel?'selected ':''}${t?'today ':''}${has?'has-data':''}" onclick="tbSelectTrackerDate('${kind}','${date}')">${day}</button>`;}
+      expanded=`<div class="tb-expanded-month"><div class="flex items-center justify-between mb-2"><button type="button" class="tb-calendar-btn" onclick="tbShiftTrackerMonth('${kind}',-1)">‹</button><b class="text-[10px] font-black text-themeAccent">${monthText(m)}</b><button type="button" class="tb-calendar-btn" onclick="tbShiftTrackerMonth('${kind}',1)">›</button></div><div class="grid grid-cols-7 gap-1 mb-1 text-center text-[7px] font-black text-themeMuted"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="tb-month-grid">${cells}</div></div>`;
+    }
+    return `<div class="tb-week-calendar"><div class="flex items-center justify-between mb-2"><button type="button" class="tb-calendar-btn" onclick="tbShiftTrackerWeek('${kind}',-1)">‹</button><div class="text-center"><b class="text-[10px] font-black text-themeAccent">${monthText(ws)}${monthText(ws)!==monthText(days[6])?' – '+monthText(days[6]):''}</b><div class="text-[8px] text-themeMuted">Week view</div></div><button type="button" class="tb-calendar-btn" onclick="tbShiftTrackerWeek('${kind}',1)">›</button></div><div class="tb-week-strip">${labels}</div><div class="tb-calendar-actions"><button type="button" class="tb-calendar-btn" onclick="tbToggleTrackerExpand('${kind}')">${st.expanded?'⌃ Week':'⌄ Expand'}</button></div>${expanded}</div>`;
+  }
+  window.tbSelectTrackerDate=function(kind,date){trackerSelectedDate=date;const st=ensureCal(kind,date);st.cursor=dateOf(date);if(kind==='gym')window.renderGymTracker();else if(kind==='sleep')window.renderSleepTracker();else if(kind==='reviews')window.renderMistakeReviewTracker();else if(kind==='nutrition')window.renderNutritionTracker();};
+  window.tbShiftTrackerWeek=function(kind,delta){const st=ensureCal(kind,trackerSelectedDate||today());st.cursor=startWeek(st.cursor);st.cursor.setDate(st.cursor.getDate()+7*Number(delta||0));const d=new Date(st.cursor);trackerSelectedDate=ymd(d);if(kind==='gym')window.renderGymTracker();else if(kind==='sleep')window.renderSleepTracker();else if(kind==='reviews')window.renderMistakeReviewTracker();else if(kind==='nutrition')window.renderNutritionTracker();};
+  window.tbShiftTrackerMonth=function(kind,delta){const st=ensureCal(kind,trackerSelectedDate||today());const d=new Date(st.cursor);d.setDate(1);d.setMonth(d.getMonth()+Number(delta||0));st.cursor=d;const selected=dateOf(trackerSelectedDate||today());if(selected.getFullYear()!==d.getFullYear()||selected.getMonth()!==d.getMonth())trackerSelectedDate=ymd(d);if(kind==='gym')window.renderGymTracker();else if(kind==='sleep')window.renderSleepTracker();else if(kind==='reviews')window.renderMistakeReviewTracker();else if(kind==='nutrition')window.renderNutritionTracker();};
+  window.tbToggleTrackerExpand=function(kind){const st=ensureCal(kind,trackerSelectedDate||today());st.expanded=!st.expanded;if(kind==='gym')window.renderGymTracker();else if(kind==='sleep')window.renderSleepTracker();else if(kind==='reviews')window.renderMistakeReviewTracker();else if(kind==='nutrition')window.renderNutritionTracker();};
+  window.tbShowAllTrackerDates=function(kind){trackerSelectedDate='';if(kind==='gym')window.renderGymTracker();else if(kind==='sleep')window.renderSleepTracker();else if(kind==='reviews')window.renderMistakeReviewTracker();else if(kind==='nutrition')window.renderNutritionTracker();};
+
+  /* ---------- Sleep: month-specific chart with explicit Y-axis ---------- */
+  function sleepChart(logs,selected){
+    const sd=dateOf(selected||today()),key=ymd(new Date(sd.getFullYear(),sd.getMonth(),1)).slice(0,7);
+    const monthLogs=logs.filter(x=>String(x.date||'').slice(0,7)===key).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const byDate={};monthLogs.forEach(x=>{byDate[x.date]=(byDate[x.date]||0)+(Number(x.hours)||0);});
+    const points=Object.keys(byDate).sort().map(date=>({date,hours:byDate[date]}));
+    const max=8, ticks=[8,7,6,5,4,3,2,1,0];
+    const bars=points.map(p=>{const h=Math.max(0,Number(p.hours)||0),pct=Math.min(100,h/max*100);let cls=h>=7?'green':h<5?'red':h>=6?'yellow':'mid';return `<div class="tb-sleep-bar-col" title="${escF(p.date)} • ${h.toFixed(1)} hours"><span class="tb-sleep-bar-label">${h.toFixed(1)}</span><div class="tb-sleep-bar ${cls}" style="height:${Math.max(3,pct)}%"></div><span class="tb-sleep-date">${Number(p.date.slice(-2))}</span></div>`;}).join('');
+    const plot=points.length?`<div class="tb-sleep-yaxis">${ticks.map(v=>`<span>${v}h</span>`).join('')}</div><div class="tb-sleep-plot"><div class="tb-sleep-bars">${bars}</div></div>`:'<div class="text-[9px] text-themeMuted py-8 text-center w-full">No sleep records in this month.</div>';
+    const total=points.reduce((a,p)=>a+p.hours,0),avg=points.length?total/points.length:0;
+    return `<div class="sleep-summary-card"><div class="flex items-start justify-between gap-3"><div><div class="text-[8px] font-black uppercase text-themeMuted">Sleep Summary • ${monthText(sd)}</div><div class="text-sm font-black text-themeText mt-1">${total.toFixed(1)} h total</div></div><div class="text-right"><div class="text-sm font-black text-themeAccent">${avg.toFixed(1)} h</div><div class="text-[8px] text-themeMuted">average / logged day</div></div></div><div class="mt-3"><div class="text-[8px] font-black uppercase text-themeMuted mb-1">Hours of sleep</div><div class="tb-sleep-chart-wrap">${plot}</div><div class="tb-sleep-legend mt-2"><span><i class="g"></i> ≥7h</span><span><i class="y"></i> 6–&lt;7h</span><span><i class="o"></i> 5–&lt;6h</span><span><i class="r"></i> &lt;5h</span></div></div></div>`;
+  }
+  window.renderSleepTracker=function(){
+    ensureSleepModal();
+    const mod=document.getElementById('trackerMod-sleep');if(!mod)return;
+    const logs=(appState.sleepLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const selected=trackerSelectedDate||today();
+    const filtered=logs.filter(x=>x.date===selected);
+    mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Sleep Ledger</h3><p class="text-[10px] text-themeMuted">Track sleep by date and keep Sleep tasks synchronized.</p></div><button onclick="openAddSleepEntry()" class="px-3 py-1.5 rounded-xl bg-themeAccent text-white text-xs font-bold">+ Log Sleep</button></div>${calendarHTML('sleep',selected,logs)}${sleepChart(logs,selected)}<div class="flex items-center justify-between"><span class="text-[9px] font-black uppercase text-themeMuted">${escF(selected)}</span><button onclick="tbShowAllTrackerDates('sleep')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2">${filtered.length?filtered.map(l=>`<div class="tracker-log-card"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] font-black uppercase text-themeMuted">${escF(l.date)}</div><div class="text-xs font-black text-themeText mt-0.5">😴 ${escF(l.sleepTime||'')} • ${Number(l.hours||0).toFixed(1)} hours</div><div class="text-[9px] text-themeMuted mt-1">${escF(l.taskName||'Manual Sleep')}</div></div><div class="tracker-log-actions"><button onclick="openEditSleepEntry('${escF(l.id)}')" class="text-[9px] font-black text-themeAccent">Edit</button><button onclick="deleteSleepEntry('${escF(l.id)}')" class="text-[9px] font-black text-rose-400">Remove</button></div></div></div>`).join(''):'<div class="text-center text-[10px] text-themeMuted py-5">No sleep record for this date.</div>'}</div>`;
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ---------- Gym ---------- */
+  window.renderGymTracker=function(){
+    const mod=document.getElementById('trackerMod-gym');if(!mod)return;
+    const logs=(appState.gymLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const selected=trackerSelectedDate||today(),filtered=logs.filter(x=>x.date===selected);
+    mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Workout Ledger</h3><p class="text-[10px] text-themeMuted">Track workouts by date.</p></div><button onclick="openAddGymModal()" class="px-3 py-1.5 rounded-xl bg-themeAccent text-white text-xs font-bold">+ Log Workout</button></div>${calendarHTML('gym',selected,logs)}<div class="flex items-center justify-between"><span class="text-[9px] font-black uppercase text-themeMuted">${escF(selected)}</span><button onclick="tbShowAllTrackerDates('gym')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2">${filtered.length?filtered.map(g=>`<div class="p-3 rounded-2xl bg-themeCard border border-themeBorder flex justify-between items-center gap-2 text-xs"><div><span class="font-bold text-themeText">${escF(g.split||'Workout')}</span><p class="text-[9px] text-themeMuted mt-0.5">${escF(g.date)}</p></div><span class="text-themeAccent font-bold">${g.weight!=null&&g.weight!==''?escF(g.weight)+' kg':'Workout'}</span></div>`).join(''):'<p class="text-center text-xs text-themeMuted py-5">No workout recorded for this date.</p>'}</div>`;
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ---------- Reviews: edit + remove only ---------- */
+  window.renderMistakeReviewTracker=function(){
+    const mod=document.getElementById('trackerMod-reviews');if(!mod)return;
+    const logs=(appState.mistakeReviewLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const selected=trackerSelectedDate||today(),filtered=logs.filter(x=>x.date===selected);
+    mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Reviews Ledger</h3><p class="text-[10px] text-themeMuted">Review records stay linked to their Tasks.</p></div><span class="text-[9px] font-black text-themeAccent bg-themeCardSoft px-2 py-1 rounded-lg">${logs.length} total</span></div>${calendarHTML('reviews',selected,logs)}<div class="flex items-center justify-between"><span class="text-[9px] font-black uppercase text-themeMuted">${escF(selected)}</span><button onclick="tbShowAllTrackerDates('reviews')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2">${filtered.length?filtered.map(l=>`<div class="tracker-log-card"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] font-black uppercase text-themeMuted">${escF(l.date)}</div><div class="text-xs font-black text-themeText mt-0.5">⚠️ ${escF(l.title||'Mistake Book Review')}</div></div><div class="tracker-log-actions"><button onclick="editReviewLog('${escF(l.id)}')" class="text-[9px] font-black text-themeAccent">Edit</button><button onclick="deleteReviewLog('${escF(l.id)}')" class="text-[9px] font-black text-rose-400">Remove</button></div></div></div>`).join(''):'<div class="text-center text-[10px] text-themeMuted py-5">No review record for this date.</div>'}</div>`;
+    if(window.lucide)lucide.createIcons();
+  };
+  window.undoReviewLog=function(){showToast('Undo has been removed. Use Remove to delete a review record.');};
+  window.undoSleepEntry=function(){showToast('Undo has been removed. Use Remove to delete a sleep record.');};
+
+  /* ---------- Nutrition ---------- */
+  window.renderNutritionTracker=function(){
+    const mod=document.getElementById('trackerMod-nutrition');if(!mod)return;
+    const logs=(appState.nutritionLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const selected=trackerSelectedDate||today(),filtered=logs.filter(x=>x.date===selected);
+    const totalP=logs.reduce((a,x)=>a+Number(x.protein||0),0),totalK=logs.reduce((a,x)=>a+Number(x.kcal||0),0);
+    const avgP=logs.length?totalP/logs.length:0,avgK=logs.length?totalK/logs.length:0;
+    mod.innerHTML=`<div class="rounded-3xl p-4 bg-themeCard border border-themeBorder flex justify-between items-center"><div><h4 class="text-xs font-black uppercase text-themeMuted">Nutrition Ledger</h4><div class="text-xs font-bold text-themeText mt-1">${totalP}g protein • ${totalK} kcal total</div><p class="text-[10px] text-themeMuted">Average: ${avgP.toFixed(0)}g • ${avgK.toFixed(0)} kcal / logged day</p></div><button onclick="openAddNutritionModal()" class="px-3 py-2 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-bold text-themeAccent">Log Intake</button></div>${calendarHTML('nutrition',selected,logs)}<div class="flex items-center justify-between"><span class="text-[9px] font-black uppercase text-themeMuted">${escF(selected)}</span><button onclick="tbShowAllTrackerDates('nutrition')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2">${filtered.length?filtered.map(n=>`<div class="p-3 rounded-2xl bg-themeCard border border-themeBorder flex justify-between items-center text-xs"><span class="font-bold text-themeText">${escF(n.date)}</span><span class="text-themeAccent font-bold">${Number(n.protein||0)}g Protein • ${Number(n.kcal||0)} kcal</span></div>`).join(''):'<p class="text-center text-xs text-themeMuted py-5">No nutrition log for this date.</p>'}</div>`;
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ---------- Revision Hub: grouped by subject ---------- */
+  window.renderRevisionTab=function(){
+    const q=document.getElementById('revisionQueueContainer');if(!q)return;
+    const groups={};
+    (appState.subjects||[]).forEach(s=>{const rows=(s.chapters||[]).filter(ch=>ch.status==='R').sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));if(rows.length)groups[s.id]={subject:s,rows};});
+    const arr=Object.values(groups).sort((a,b)=>String(a.subject.name||'').localeCompare(String(b.subject.name||'')));
+    const h=document.getElementById('revisionHistoryLogContainer');if(h)h.innerHTML='';
+    if(!arr.length){q.innerHTML='<div class="p-5 rounded-3xl bg-themeCard border border-themeBorder text-center text-themeMuted"><div class="text-xl mb-1">🔁</div><p class="text-xs font-bold">No revision topics yet.</p><p class="text-[10px] mt-1">Mark a chapter as R in Syllabus to add it here.</p></div>';return;}
+    q.innerHTML=arr.map(g=>`<div class="tb-subject-group"><div class="tb-subject-group-head"><span class="w-8 h-8 rounded-xl bg-themeCardSoft flex items-center justify-center text-[9px] font-black" style="color:${escF(g.subject.color||'var(--accent-color)')}">${escF(g.subject.symbol||String(g.subject.name||'').slice(0,2).toUpperCase())}</span><div class="min-w-0"><h4 class="text-xs font-black uppercase text-themeText">${escF(g.subject.name)}</h4><p class="text-[8px] text-themeMuted">${g.rows.length} revision topic${g.rows.length===1?'':'s'}</p></div></div><div class="tb-subject-group-list">${g.rows.map(ch=>`<div class="p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder flex items-center justify-between gap-2"><div class="revision-topic-name text-xs font-black text-themeText min-w-0">${escF(ch.name)}</div><button onclick="openRevisionTaskModal('${escF(g.subject.id)}','${escF(ch.id)}')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-themeAccent text-white text-[9px] font-black">+ Add to Task</button></div>`).join('')}</div></div>`).join('');
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ---------- MCQ Hub: grouped by subject ---------- */
+  window.renderMcqHub=function(){
+    if(typeof installMcqHub==='function')installMcqHub();
+    const list=document.getElementById('mcqHubList'),count=document.getElementById('mcqHubCount');if(!list)return;
+    const groups=[];let total=0;
+    (appState.subjects||[]).forEach(s=>{const rows=(s.chapters||[]).filter(ch=>ch.status==='MCQ').sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));if(rows.length){groups.push({s,rows});total+=rows.length;}});
+    if(count)count.textContent=`${total} chapter${total===1?'':'s'} • ${groups.length} subject${groups.length===1?'':'s'}`;
+    if(!groups.length){list.innerHTML='<div class="tb-empty rounded-3xl bg-themeCard border border-themeBorder text-themeMuted"><div class="text-2xl mb-2">🧠</div><p class="text-xs font-bold">No chapters marked for MCQ yet.</p><p class="text-[10px] mt-1">Go to Syllabus, choose a chapter, then tap MCQ.</p></div>';return;}
+    list.innerHTML=groups.map(g=>`<div class="tb-subject-group"><div class="tb-subject-group-head"><span class="w-8 h-8 rounded-xl bg-themeCardSoft flex items-center justify-center text-[9px] font-black" style="color:${escF(g.s.color||'var(--accent-color)')}">${escF(g.s.symbol||String(g.s.name||'').slice(0,2).toUpperCase())}</span><div class="min-w-0"><h4 class="text-xs font-black uppercase text-themeText">${escF(g.s.name)}</h4><p class="text-[8px] text-themeMuted">${g.rows.length} MCQ chapter${g.rows.length===1?'':'s'}</p></div></div><div class="tb-subject-group-list">${g.rows.map(ch=>{const pending=(appState.tasks||[]).filter(t=>!t.completed&&t.subjectId===g.s.id&&t.chapterId===ch.id&&t.trackerType==='mcq').length;return `<div class="p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder flex items-center justify-between gap-2"><div class="min-w-0"><div class="text-xs font-black text-themeText">${escF(ch.name)}</div>${pending?`<div class="text-[8px] text-amber-400 mt-1">${pending} pending MCQ task${pending===1?'':'s'}</div>`:''}</div><button onclick="openMcqChapterTask('${escF(g.s.id)}','${escF(ch.id)}')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-themeAccent text-white text-[9px] font-black">+ Add to Task</button></div>`;}).join('')}</div></div>`).join('');
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ---------- Focus: subject/chapter explicitly optional ---------- */
+  function makeFocusOptional(){
+    const s=document.getElementById('focusSubjectSelect'),c=document.getElementById('focusChapterSelect');
+    if(!s||!c)return;
+    const currentS=s.value,currentC=c.value;
+    const subjects=(appState.subjects||[]).map(x=>`<option value="${escF(x.id)}">${escF(x.name)}</option>`).join('');
+    s.innerHTML='<option value="">No Subject (Optional)</option>'+subjects;
+    if(currentS && subjects.includes(`value="${escF(currentS)}"`))s.value=currentS;else s.value='';
+    const sub=getSub(s.value);
+    c.innerHTML='<option value="">No Chapter (Optional)</option>'+(sub?.chapters||[]).map(x=>`<option value="${escF(x.id)}">${escF(x.name)}</option>`).join('');
+    if(currentC && sub?.chapters?.some(x=>x.id===currentC))c.value=currentC;else c.value='';
+    const wrap=s.parentElement?.parentElement;
+    if(wrap){const labels=wrap.querySelectorAll('label');if(labels[0])labels[0].textContent='Subject (Optional)';if(labels[1])labels[1].textContent='Chapter (Optional)';}
+  }
+  window.populateFocusChapters=function(){
+    const s=document.getElementById('focusSubjectSelect'),c=document.getElementById('focusChapterSelect');if(!s||!c)return;
+    const sub=getSub(s.value);c.innerHTML='<option value="">No Chapter (Optional)</option>'+(sub?.chapters||[]).map(x=>`<option value="${escF(x.id)}">${escF(x.name)}</option>`).join('');
+  };
+
+  /* ---------- Daily Activity GT chart: force a visible, robust SVG ---------- */
+  window.renderMonthGTChart=function(){
+    const c=document.getElementById('statsMonthGTChart');if(!c)return;
+    const selected=typeof window.__tbStatsSelectedDate==='string'?window.__tbStatsSelectedDate:(typeof statsDate!=='undefined'?ymd(statsDate):today());
+    const d=dateOf(selected),key=ymd(new Date(d.getFullYear(),d.getMonth(),1)).slice(0,7);
+    const tests=(appState.grandTests||[]).filter(g=>String(g.date||'').slice(0,7)===key).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+    if(!tests.length){c.innerHTML='<div class="rounded-3xl p-4 bg-themeCard border border-themeBorder"><h4 class="text-xs font-black uppercase">📊 Grand Tests</h4><p class="text-[9px] text-themeMuted mt-1">No Grand Tests recorded in '+escF(monthText(d))+'.</p></div>';return;}
+    const W=Math.max(560,tests.length*120),H=285,L=48,R=18,T=25,B=72,max=Math.max(20,...tests.map(g=>Number(g.score)||0)),plot=H-T-B,slot=(W-L-R)/tests.length,bw=Math.min(62,Math.max(32,slot*.5));
+    let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-label="Grand Test scores for ${escF(monthText(d))}"><line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="currentColor" opacity=".45"/><line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="currentColor" opacity=".45"/>`;
+    for(let i=0;i<=4;i++){const v=Math.round(max-i*max/4),y=T+i*plot/4;svg+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${L-7}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor">${v}</text>`;}
+    tests.forEach((g,i)=>{const score=Number(g.score)||0,cx=L+slot*(i+.5),h=Math.max(4,Math.max(0,score)/max*plot),y=H-B-h;svg+=`<rect x="${cx-bw/2}" y="${y}" width="${bw}" height="${h}" rx="7" fill="var(--accent-color)" opacity=".88"><title>${escF(g.name)} • ${escF(g.date||'')} • ${score} marks</title></rect><text x="${cx}" y="${y-7}" text-anchor="middle" font-size="11" font-weight="900" fill="currentColor">${score}</text><text x="${cx}" y="${H-B+18}" text-anchor="middle" font-size="9" font-weight="800" fill="currentColor">${escF(String(g.name||'GT').slice(0,15))}</text><text x="${cx}" y="${H-B+33}" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">${escF(g.date||'')}</text><text x="${cx}" y="${H-B+49}" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">${Number(g.correct)||0} correct</text>`;});
+    svg+='</svg>';c.innerHTML=`<div class="rounded-3xl p-4 bg-themeCard border border-themeBorder"><div class="flex items-center justify-between"><div><h4 class="text-xs font-black uppercase">📊 Grand Test Performance</h4><p class="text-[9px] text-themeMuted">${escF(monthText(d))} • score = 4 × correct − wrong</p></div><span class="text-[9px] font-black text-themeAccent">${tests.length} test${tests.length===1?'':'s'}</span></div><div class="tb-daily-gt-chart mt-2">${svg}</div></div>`;
+  };
+
+  /* Keep Stats selected date visible to the GT renderer even when the older closure owns statsDate. */
+  const oldSelectStatsDate=window.selectStatsDate;
+  window.selectStatsDate=function(date){window.__tbStatsSelectedDate=date;if(typeof oldSelectStatsDate==='function')oldSelectStatsDate(date);else{const d=dateOf(date);if(typeof statsDate!=='undefined'){statsDate=d;statsWeekCursor=new Date(d);}if(typeof renderStatistics==='function')renderStatistics();}setTimeout(window.renderMonthGTChart,0);};
+
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      makeFocusOptional();
+      const active=typeof activeTrackerModule!=='undefined'?activeTrackerModule:null;
+      if(active==='gym')renderGymTracker();
+      if(active==='sleep')renderSleepTracker();
+      if(active==='reviews')renderMistakeReviewTracker();
+      if(active==='nutrition')renderNutritionTracker();
+      if(typeof window.renderRevisionTab==='function')window.renderRevisionTab();
+      if(typeof window.renderMcqHub==='function')window.renderMcqHub();
+      if(typeof window.renderMonthGTChart==='function')window.renderMonthGTChart();
+      if(window.lucide)lucide.createIcons();
+    },120);
+  });
+  setInterval(function(){
+    if(typeof currentTab!=='undefined'&&currentTab==='statistics'&&typeof window.renderMonthGTChart==='function')window.renderMonthGTChart();
+  },3000);
+})();
+</script>
+
+
+<script id="trackability-final-dispatch-fix">
+(function(){
+  'use strict';
+  /* Route the app's existing navigation through the final tracker/stat renderers. */
+  const baseSwitchTracker=window.switchTrackerModule;
+  window.switchTrackerModule=function(mod){
+    if(typeof baseSwitchTracker==='function')baseSwitchTracker(mod);
+    setTimeout(function(){
+      if(mod==='gt'&&typeof window.renderGTTracker==='function')window.renderGTTracker();
+      if(mod==='gym'&&typeof window.renderGymTracker==='function')window.renderGymTracker();
+      if(mod==='sleep'&&typeof window.renderSleepTracker==='function')window.renderSleepTracker();
+      if(mod==='reviews'&&typeof window.renderMistakeReviewTracker==='function')window.renderMistakeReviewTracker();
+      if(mod==='nutrition'&&typeof window.renderNutritionTracker==='function')window.renderNutritionTracker();
+      if(window.lucide)lucide.createIcons();
+    },0);
+  };
+
+  /* Make the GT tracker chart use a guaranteed visible SVG renderer. */
+  window.renderGTScoreChart=function(){
+    const el=document.getElementById('gtScoreChart');if(!el)return;
+    const data=(appState.grandTests||[]).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.id||'').localeCompare(String(b.id||'')));
+    if(!data.length){el.innerHTML='<div class="text-center text-[10px] text-themeMuted py-8">No Grand Tests recorded yet.</div>';return;}
+    const W=Math.max(620,data.length*125),H=300,L=52,R=18,T=25,B=80,max=Math.max(20,...data.map(g=>Number(g.score)||0)),plot=H-T-B,slot=(W-L-R)/data.length,bw=Math.min(62,Math.max(34,slot*.5));
+    let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block" role="img" aria-label="Grand Test score bar chart">`;
+    svg+=`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="currentColor" opacity=".45"/><line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="currentColor" opacity=".45"/>`;
+    for(let i=0;i<=4;i++){const v=Math.round(max-(max*i/4)),y=T+i*plot/4;svg+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${L-8}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor">${v}</text>`;}
+    data.forEach((g,i)=>{const score=Number(g.score)||0,cx=L+slot*(i+.5),h=Math.max(4,Math.max(0,score)/max*plot),y=H-B-h;svg+=`<rect x="${cx-bw/2}" y="${y}" width="${bw}" height="${h}" rx="8" fill="var(--accent-color)" opacity=".9"><title>${esc(g.name||'GT')} • ${esc(g.date||'')} • ${score} marks</title></rect><text x="${cx}" y="${y-8}" text-anchor="middle" font-size="11" font-weight="900" fill="currentColor">${score}</text><text x="${cx}" y="${H-B+19}" text-anchor="middle" font-size="9" font-weight="900" fill="currentColor">${esc(String(g.name||'GT').slice(0,16))}</text><text x="${cx}" y="${H-B+34}" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">${esc(g.date||'')}</text><text x="${cx}" y="${H-B+50}" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">${Number(g.correct)||0} correct</text>`;});
+    svg+='</svg>';
+    el.innerHTML=`<div class="overflow-x-auto" style="-webkit-overflow-scrolling:touch">${svg}</div>`;
+  };
+  window.renderGTTracker=function(){
+    const c=document.getElementById('gtListContainer');if(!c)return;
+    const all=(appState.grandTests||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    const tests=typeof trackerSelectedDate!=='undefined'&&trackerSelectedDate?all.filter(x=>x.date===trackerSelectedDate):all;
+    const best=all.reduce((m,g)=>Math.max(m,Number(g.score)||0),0);
+    const bestEl=document.getElementById('gtBestScoreCard'),countEl=document.getElementById('gtTotalCountCard');if(bestEl)bestEl.textContent=best+' marks';if(countEl)countEl.textContent=String(all.length);
+    c.innerHTML=tests.length?tests.map(g=>`<div class="p-3.5 rounded-2xl bg-themeCard border border-themeBorder space-y-2"><div class="flex justify-between gap-2"><div class="min-w-0"><span class="font-bold text-sm block">${esc(g.name||'Grand Test')}</span><span class="text-[9px] text-themeMuted">${esc(g.date||'')}${g.platform?' • '+esc(g.platform):''}</span></div><span class="text-base font-black text-themeAccent">${Number(g.score)||0} marks</span></div><div class="text-[9px] text-themeMuted">✓ ${Number(g.correct)||0} correct • ✕ ${Number(g.wrong)||0} wrong • ${Number(g.total||0)} total Q</div><button onclick="undoGT('${esc(g.id||'')}')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black">Remove</button></div>`).join(''):'<p class="text-center text-xs text-themeMuted py-6">No Grand Tests recorded for this date.</p>';
+    window.renderGTScoreChart();
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* Stats renderer: render the final chart after every existing stats refresh. */
+  const baseStats=window.renderStatistics;
+  if(typeof baseStats==='function'){
+    window.renderStatistics=function(){
+      baseStats.apply(this,arguments);
+      setTimeout(function(){if(typeof window.renderMonthGTChart==='function')window.renderMonthGTChart();},0);
+    };
+  }
+
+  /* Make the final GT chart react immediately when the selected stats date changes. */
+  const baseSelect=window.selectStatsDate;
+  window.selectStatsDate=function(date){
+    window.__tbStatsSelectedDate=date;
+    if(typeof baseSelect==='function')baseSelect(date);
+    setTimeout(function(){if(typeof window.renderMonthGTChart==='function')window.renderMonthGTChart();},0);
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      if(typeof window.renderGTTracker==='function'&&typeof activeTrackerModule!=='undefined'&&activeTrackerModule==='gt')window.renderGTTracker();
+      if(typeof window.renderStatistics==='function')window.renderStatistics();
+      if(window.lucide)lucide.createIcons();
+    },180);
+  });
+})();
+</script>
 </body>
 </html>
