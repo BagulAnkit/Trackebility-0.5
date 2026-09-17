@@ -3795,5 +3795,301 @@
 })();
 </script>
 
+
+<style>
+/* UPDATE 6: compact Home tasks + cumulative GT chart + clean revision workflow */
+.home-task-completed-card-hidden{display:none!important}
+#homeTasksHeaderRow{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:.5rem!important;flex-wrap:nowrap!important}
+#homeTasksHeaderLeft{min-width:0;flex:1}
+#homeTasksHeaderActions{display:flex;align-items:center;gap:.35rem;flex-shrink:0}
+#homeNextUpLine{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt-chart-scroll{width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+.gt-chart-scroll svg{display:block;min-width:640px}
+</style>
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- HOME: compact Tasks & Schedule header ---------- */
+  function updateHomeTaskHeader(){
+    const list=document.getElementById('homeEnlargedTasksList');
+    if(!list)return;
+    const section=list.closest('.rounded-3xl');
+    if(!section)return;
+    const old=section.querySelector('#homeTasksHeaderRow');
+    const heading=section.querySelector('h4');
+    const next=document.getElementById('homeNextUpLine');
+    const badge=document.getElementById('homeTodayTasksCountBadge');
+    const buttons=section.querySelectorAll('button');
+    const addBtn=[...buttons].find(b=>/openAddTaskModal/.test(b.getAttribute('onclick')||''));
+    const viewBtn=[...buttons].find(b=>/switchTab\('tasks'\)/.test(b.getAttribute('onclick')||''));
+    if(!heading)return;
+    let row=old;
+    if(!row){
+      row=document.createElement('div');row.id='homeTasksHeaderRow';
+      const left=document.createElement('div');left.id='homeTasksHeaderLeft';left.className='min-w-0';
+      const actions=document.createElement('div');actions.id='homeTasksHeaderActions';
+      heading.parentElement.parentElement.insertBefore(row,heading.parentElement);
+      row.appendChild(left);row.appendChild(actions);
+      left.appendChild(heading.parentElement);
+      if(addBtn)actions.appendChild(addBtn);
+      if(viewBtn)actions.appendChild(viewBtn);
+    }
+    const left=document.getElementById('homeTasksHeaderLeft');
+    if(left && next && next.parentElement!==left) left.appendChild(next);
+    if(left && badge && badge.parentElement!==left){
+      badge.className='text-[10px] font-bold text-themeAccent bg-themeCardSoft px-2 py-0.5 rounded-full whitespace-nowrap';
+      left.appendChild(badge);
+    }
+    // Make the count visually part of the same heading row.
+    if(left){
+      const hp=left.querySelector('div:first-child');
+      if(hp && badge && badge.parentElement!==hp) hp.appendChild(badge);
+    }
+    const completedCard=document.getElementById('metricTodayTasks')?.closest('.rounded-2xl');
+    if(completedCard)completedCard.classList.add('home-task-completed-card-hidden');
+    if(viewBtn){viewBtn.textContent='View all →';viewBtn.className='w-full py-1.5 text-[10px] font-black text-themeAccent';}
+  }
+
+  const oldRenderHome6=window.renderHome;
+  window.renderHome=function(){
+    if(typeof oldRenderHome6==='function')oldRenderHome6();
+    updateHomeTaskHeader();
+    updateExamCountdown6();
+  };
+
+  /* ---------- Exam countdown: live second-by-second update ---------- */
+  function updateExamCountdown6(){
+    const dayEl=document.getElementById('homeDaysLeftHero'),ticker=document.getElementById('homeCountdownPrecisionTicker');
+    if(!dayEl||!ticker)return;
+    const date=appState.examDate;if(!date)return;
+    const target=new Date(date+'T00:00:00');
+    const now=new Date();let ms=target-now;
+    if(ms<=0){dayEl.textContent='0';ticker.textContent='Exam Finished / Today!';return;}
+    const days=Math.floor(ms/86400000);ms-=days*86400000;
+    const h=Math.floor(ms/3600000);ms-=h*3600000;const m=Math.floor(ms/60000);ms-=m*60000;const sec=Math.floor(ms/1000);
+    dayEl.textContent=days;ticker.textContent=`${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+  }
+  setInterval(updateExamCountdown6,1000);
+
+  /* ---------- GT: cumulative all-time chart, readable and horizontally scrollable ---------- */
+  window.renderGTScoreChart=function(){
+    const el=document.getElementById('gtScoreChart');if(!el)return;
+    const data=(appState.grandTests||[]).slice().sort((a,b)=>{
+      const d=(a.date||'').localeCompare(b.date||'');return d||((a.id||'').localeCompare(b.id||''));
+    });
+    if(!data.length){el.innerHTML='<p class="text-[10px] text-themeMuted text-center py-8">Your GT score bars will appear here.</p>';return;}
+    const scores=data.map(g=>Number(g.score)||0);const maxScore=Math.max(20,...scores,0);const minScore=Math.min(0,...scores,0);
+    const range=Math.max(20,maxScore-minScore),W=Math.max(760,data.length*145),H=340,left=64,right=24,top=26,bottom=104,plotH=H-top-bottom,baseY=top+((maxScore-0)/range)*plotH;
+    const tickCount=5;let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cumulative Grand Test score trend">`;
+    svg+=`<line x1="${left}" y1="${top}" x2="${left}" y2="${H-bottom}" stroke="currentColor" opacity=".45"/><line x1="${left}" y1="${baseY}" x2="${W-right}" y2="${baseY}" stroke="currentColor" opacity=".55"/>`;
+    for(let i=0;i<=tickCount;i++){
+      const v=maxScore-(range*i/tickCount),y=top+((maxScore-v)/range)*plotH;
+      svg+=`<line x1="${left}" y1="${y}" x2="${W-right}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-10}" y="${y+5}" text-anchor="end" font-size="13" font-weight="700" fill="currentColor" opacity=".78">${Math.round(v)}</text>`;
+    }
+    const plotW=W-left-right,slot=plotW/data.length,bw=Math.min(82,Math.max(44,slot*.52));
+    data.forEach((g,i)=>{
+      const score=Number(g.score)||0,cx=left+slot*(i+.5),mag=Math.abs(score)/range*plotH,y=score>=0?baseY-mag:baseY;
+      const correct=Number(g.correct)||0,wrong=Number(g.wrong)||0;
+      svg+=`<rect x="${cx-bw/2}" y="${y}" width="${bw}" height="${Math.max(3,mag)}" rx="9" fill="currentColor" opacity=".78"><title>${esc(g.name||'GT')} • ${esc(g.date||'')} • ${score} marks • ${correct} correct • ${wrong} wrong</title></rect>`;
+      svg+=`<text x="${cx}" y="${score>=0?y-9:y+mag+19}" text-anchor="middle" font-size="15" font-weight="900" fill="currentColor">${score}</text>`;
+      const name=String(g.name||'GT');
+      const short=name.length>18?name.slice(0,17)+'…':name;
+      svg+=`<text x="${cx}" y="${H-bottom+25}" text-anchor="middle" font-size="14" font-weight="900" fill="currentColor">${esc(short)}</text>`;
+      svg+=`<text x="${cx}" y="${H-bottom+45}" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor" opacity=".78">${esc(g.date||'')}</text>`;
+      svg+=`<text x="${cx}" y="${H-bottom+64}" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" opacity=".65">${correct} correct • ${wrong} wrong</text>`;
+    });
+    svg+='</svg>';
+    el.innerHTML=`<div class="gt-chart-scroll">${svg}</div>`;
+  };
+
+  /* ---------- Stats: remove Study Distribution ---------- */
+  function removeStudyDistribution6(){
+    const el=document.getElementById('statsDistributionWrapper')?.closest('.rounded-3xl');
+    if(el)el.remove();
+  }
+
+  /* ---------- Search: real navigation ---------- */
+  window.runGlobalSearch=function(q){
+    q=String(q||'').toLowerCase().trim();const c=document.getElementById('globalSearchResults');if(!c)return;
+    if(!q){c.innerHTML='';return;}
+    const results=[];
+    const push=(type,title,sub,action)=>results.push({type,title,sub,action});
+    (appState.subjects||[]).forEach(s=>{
+      if(s.name.toLowerCase().includes(q))push('Subject',s.name,`${(s.chapters||[]).length} chapters`,()=>{selectedSubjectId=s.id;switchTab('syllabus');renderSyllabus();closeModal('searchModal');});
+      (s.chapters||[]).forEach(ch=>{if(ch.name.toLowerCase().includes(q))push('Chapter',ch.name,s.name,()=>{selectedSubjectId=s.id;switchTab('syllabus');renderSyllabus();closeModal('searchModal');setTimeout(()=>document.querySelectorAll('#syllabusChaptersList h5').forEach(h=>{if(h.textContent.trim()===ch.name){h.closest('.p-3')?.scrollIntoView({behavior:'smooth',block:'center'});}}),80);});});
+    });
+    (appState.tasks||[]).forEach(t=>{if((t.name||'').toLowerCase().includes(q))push('Task',t.name,t.date||'No date',()=>{switchTab('tasks');closeModal('searchModal');setTimeout(()=>openTaskActions(t.id),100);});});
+    (appState.mistakes||[]).forEach(m=>{if((m.topic||'').toLowerCase().includes(q)||((m.notes||'').toLowerCase().includes(q)))push('Mistake',m.topic,m.status||'Unresolved',()=>{switchTab('tracker');switchTrackerModule('mistakes');closeModal('searchModal');});});
+    (appState.grandTests||[]).forEach(g=>{if((g.name||'').toLowerCase().includes(q))push('Grand Test',g.name,`${g.date||''} • ${g.score||0} marks`,()=>{switchTab('tracker');switchTrackerModule('gt');closeModal('searchModal');});});
+    (appState.revisionItems||[]).forEach(r=>{if((r.topic||'').toLowerCase().includes(q))push('Revision',r.topic,`+${intervals[Math.min(Number(r.stage)||0,intervals.length-1)]} stage`,()=>{switchTab('syllabus');switchSyllabusSubTab('revision');closeModal('searchModal');});});
+    (appState.mcqIds||[]).forEach(m=>{if((m.qid||'').toLowerCase().includes(q)||(m.topic||'').toLowerCase().includes(q))push('MCQ ID',m.qid||'',`${m.topic||''} • ${m.date||''}`,()=>{switchTab('tracker');switchTrackerModule('mcqid');closeModal('searchModal');});});
+    c.innerHTML=results.slice(0,30).map((r,i)=>`<button data-search-index="${i}" class="w-full text-left p-3 rounded-2xl bg-themeCardSoft border border-themeBorder hover:border-themeAccent transition"><div class="flex justify-between gap-2"><span class="text-[8px] font-black uppercase text-themeAccent">${esc(r.type)}</span><span class="text-[8px] text-themeMuted">Open →</span></div><b class="block text-xs text-themeText mt-1">${esc(r.title)}</b><span class="block text-[9px] text-themeMuted mt-0.5">${esc(r.sub)}</span></button>`).join('')||'<p class="text-themeMuted text-center py-6">No matching records found.</p>';
+    c.querySelectorAll('[data-search-index]').forEach((b,i)=>b.onclick=results[i].action);
+  };
+
+  /* ---------- Revision Hub: truly independent from syllabus completion ---------- */
+  const REV_INTERVALS=[1,3,7,14,30,60];
+  function revAddDays(date,n){const d=new Date((date||getLocalYMD())+'T00:00:00');d.setDate(d.getDate()+n);return getLocalYMD(d);}
+  function revGetSub(id){return (appState.subjects||[]).find(s=>s.id===id);}
+  function ensureRevisionStore6(){
+    appState.revisionItems=appState.revisionItems||[];appState.revisionHistory=appState.revisionHistory||[];appState.tasks=appState.tasks||[];
+    // Only migrate chapter R markers when there is no existing revision record.
+    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{
+      if(ch.status==='R' && !appState.revisionItems.some(r=>r.chapterId===ch.id)){
+        const stage=Math.max(0,Math.min(REV_INTERVALS.length-1,Number(ch.revStage)||0));
+        appState.revisionItems.push({id:'rev_'+ch.id,subjectId:s.id,chapterId:ch.id,topic:ch.name,stage,nextDate:ch.nextRevisionDate||revAddDays(getLocalYMD(),REV_INTERVALS[stage]),time:'09:00',duration:30,color:'#f59e0b'});
+      }
+    }));
+  }
+  function ensureRevisionTask6(r){
+    appState.tasks=appState.tasks||[];
+    let t=appState.tasks.find(x=>x.revisionId===r.id && !x.completed);
+    if(!t){
+      t={id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name:`Revision: ${r.topic}`,date:r.nextDate,startTime:r.time||null,endTime:r.time?formatTimeEnd(r.time,r.duration||30):null,duration:r.duration||30,completed:false,subjectId:r.subjectId||'',chapterId:r.chapterId||'',color:r.color||'#f59e0b',trackerType:'revision',revisionId:r.id,revisionStage:Number(r.stage)||0};
+      appState.tasks.push(t);
+    }else{
+      t.name=`Revision: ${r.topic}`;t.date=r.nextDate;t.subjectId=r.subjectId||'';t.chapterId=r.chapterId||'';t.revisionStage=Number(r.stage)||0;
+      if(!t.completed){t.startTime=r.time||null;t.duration=r.duration||30;t.color=r.color||t.color||'#f59e0b';t.endTime=t.startTime?formatTimeEnd(t.startTime,t.duration):null;}
+    }
+    return t;
+  }
+  function syncRevisionTaskFromTask6(t){
+    if(!t?.revisionId)return;const r=(appState.revisionItems||[]).find(x=>x.id===t.revisionId);if(!r)return;
+    r.nextDate=t.date;r.time=t.startTime||null;r.duration=Number(t.duration)||30;r.color=t.color||r.color||'#f59e0b';
+  }
+
+  window.setChapterStatus=function(subId,chId,status){
+    const sub=revGetSub(subId),ch=sub?.chapters?.find(c=>c.id===chId);if(!ch)return;
+    if(status==='R'){
+      ensureRevisionStore6();let r=appState.revisionItems.find(x=>x.chapterId===chId);
+      if(!r){r={id:'rev_'+chId,subjectId:subId,chapterId:chId,topic:ch.name,stage:0,nextDate:revAddDays(getLocalYMD(),1),time:'09:00',duration:30,color:'#f59e0b'};appState.revisionItems.push(r);}else{r.subjectId=subId;r.topic=ch.name;if(!r.nextDate)r.nextDate=revAddDays(getLocalYMD(),REV_INTERVALS[Math.min(Number(r.stage)||0,REV_INTERVALS.length-1)]);}
+      // R is a revision marker only; it must never imply syllabus completion.
+      ch.status='R';ch.revStage=Number(r.stage)||0;ch.nextRevisionDate=r.nextDate;ensureRevisionTask6(r);
+      saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`${ch.name} added to Revision +${REV_INTERVALS[r.stage]}`);return;
+    }
+    ch.status=status;saveState();renderSyllabus();renderStatistics();
+  };
+
+  window.renderRevisionTab=function(){
+    ensureRevisionStore6();appState.revisionItems.forEach(ensureRevisionTask6);
+    const q=document.getElementById('revisionQueueContainer'),h=document.getElementById('revisionHistoryLogContainer');if(!q)return;
+    const lanes=REV_INTERVALS.map((n,i)=>{
+      const arr=appState.revisionItems.filter(r=>Math.min(Number(r.stage)||0,REV_INTERVALS.length-1)===i).sort((a,b)=>(a.nextDate||'').localeCompare(b.nextDate||''));
+      return `<div class="rounded-2xl bg-themeCardSoft/50 border border-themeBorder p-2.5 space-y-2"><div class="flex justify-between items-center"><b class="text-[10px] uppercase text-themeAccent">+${n} Day</b><span class="text-[9px] text-themeMuted">${arr.length} topic${arr.length===1?'':'s'}</span></div>${arr.length?arr.map(r=>{const s=revGetSub(r.subjectId),due=r.nextDate<=getLocalYMD(),next=REV_INTERVALS[Math.min((Number(r.stage)||0)+1,REV_INTERVALS.length-1)];return `<div class="p-2.5 rounded-xl bg-themeCard border ${due?'border-themeAccent':'border-themeBorder'}"><div class="flex justify-between gap-2"><div class="min-w-0"><span class="text-[8px] font-black text-themeMuted uppercase">${esc(s?.name||'General')}</span><b class="block text-[11px] text-themeText">${esc(r.topic)}</b><span class="text-[8px] ${due?'text-themeAccent font-bold':'text-themeMuted'}">${due?'Due now':'Scheduled'} • ${esc(r.nextDate)}${r.time?' • '+formatTime(r.time):''}</span></div><div class="flex gap-1 shrink-0"><button onclick="editRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-themeCardSoft text-themeAccent text-[8px] font-black">Edit</button><button onclick="advanceSpacedRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[8px] font-black">Done → +${next}</button></div></div></div>`}).join(''):'<div class="text-[9px] text-themeMuted py-2">Nothing here.</div>'}</div>`;
+    }).join('');q.innerHTML=lanes;
+    const hist=(appState.revisionHistory||[]).slice().reverse().slice(0,30);h.innerHTML=hist.length?hist.map(x=>`<div class="p-2.5 rounded-xl bg-themeCard border border-themeBorder flex justify-between items-center"><div><b class="text-[10px] text-themeText">${esc(x.topic)}</b><p class="text-[8px] text-themeMuted">Completed ${esc(x.completedDate)} • from +${REV_INTERVALS[x.fromStage]}d • next +${REV_INTERVALS[x.toStage]}d</p></div><button onclick="undoRevision('${esc(x.revisionId)}','${esc(x.id)}')" class="text-amber-400 text-[9px] font-black">Undo ↩</button></div>`).join(''):'<p class="text-[9px] text-themeMuted py-3 text-center">No completed revisions yet.</p>';
+    if(window.lucide)lucide.createIcons();
+  };
+
+  window.advanceSpacedRevision=function(revisionId,taskId=null){
+    ensureRevisionStore6();const r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;
+    const today=getLocalYMD(),fromStage=Math.max(0,Math.min(REV_INTERVALS.length-1,Number(r.stage)||0)),fromDate=r.nextDate||today,toStage=Math.min(fromStage+1,REV_INTERVALS.length-1),toDate=revAddDays(today,REV_INTERVALS[toStage]);
+    let oldTask=taskId?(appState.tasks||[]).find(x=>x.id===taskId):(appState.tasks||[]).find(x=>x.revisionId===r.id&&!x.completed&&x.date===fromDate);
+    const hist={id:'rh_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),revisionId:r.id,topic:r.topic,completedDate:today,fromStage,fromDate,toStage,toDate,taskId:oldTask?.id||null,previousTaskState:oldTask?{date:oldTask.date,startTime:oldTask.startTime||null,endTime:oldTask.endTime||null,duration:oldTask.duration,color:oldTask.color}:null};
+    appState.revisionHistory.push(hist);
+    if(oldTask)oldTask.completed=true;
+    r.stage=toStage;r.nextDate=toDate;
+    // Do not change syllabus completion state. R remains only a revision marker.
+    const sub=revGetSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.status='R';ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
+    ensureRevisionTask6(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision completed → +${REV_INTERVALS[toStage]} day task scheduled`);
+  };
+
+  window.undoRevision=function(revisionId,historyId=null){
+    ensureRevisionStore6();let idx=historyId?appState.revisionHistory.findIndex(x=>x.id===historyId):-1;if(idx<0){for(let i=appState.revisionHistory.length-1;i>=0;i--){if(appState.revisionHistory[i].revisionId===revisionId){idx=i;break;}}}if(idx<0)return;
+    const hist=appState.revisionHistory[idx],r=appState.revisionItems.find(x=>x.id===hist.revisionId);if(!r)return;
+    // Remove only the future task generated by the completion being undone.
+    appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId===r.id&&!t.completed&&t.date===hist.toDate));
+    r.stage=hist.fromStage;r.nextDate=hist.fromDate;
+    // Restore the exact old task where possible.
+    let oldTask=hist.taskId?(appState.tasks||[]).find(t=>t.id===hist.taskId):null;
+    if(oldTask){oldTask.completed=false;if(hist.previousTaskState){Object.assign(oldTask,hist.previousTaskState);}oldTask.revisionStage=hist.fromStage;}
+    appState.revisionHistory.splice(idx,1);
+    const sub=revGetSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.status='R';ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
+    ensureRevisionTask6(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision undone → returned to +${REV_INTERVALS[r.stage]} day stage`);
+  };
+
+  /* Task Menu edit/completion keeps revision properties synchronized, but never marks Syllabus DONE. */
+  const baseToggle6=window.toggleTaskDone;
+  window.toggleTaskDone=function(id){
+    const t=(appState.tasks||[]).find(x=>x.id===id);
+    if(t?.revisionId){
+      if(t.completed){
+        const h=[...(appState.revisionHistory||[])].reverse().find(x=>x.taskId===id);if(h)undoRevision(t.revisionId,h.id);else{t.completed=false;saveState();refreshAllViews();}
+      }else advanceSpacedRevision(t.revisionId,id);
+      return;
+    }
+    if(typeof baseToggle6==='function')return baseToggle6(id);
+  };
+
+  /* Keep the revision record updated when its task is edited in Task Menu. */
+  const baseSaveTask6=window.saveTask;
+  window.saveTask=function(){
+    const id=document.getElementById('taskEditId')?.value||'',before=id?(appState.tasks||[]).find(t=>t.id===id):null;
+    if(typeof baseSaveTask6==='function')baseSaveTask6();
+    const t=id?(appState.tasks||[]).find(x=>x.id===id):null;if(t?.revisionId)syncRevisionTaskFromTask6(t);
+    if(t?.revisionId)saveState();
+  };
+
+  function initUpdate6(){
+    removeStudyDistribution6();updateHomeTaskHeader();updateExamCountdown6();
+    ensureRevisionStore6();appState.revisionItems.forEach(ensureRevisionTask6);saveState();
+    if(activeTrackerModule==='gt')renderGTTracker();
+    if(currentTab==='syllabus')renderRevisionTab();
+  }
+  document.addEventListener('DOMContentLoaded',initUpdate6);
+  setInterval(()=>{removeStudyDistribution6();if(currentTab==='home')updateHomeTaskHeader();},3000);
+})();
+</script>
+
+
+<style>
+/* UPDATE 6 FINAL POLISH */
+#homeTasksHeaderRow #homeTasksHeaderActions .home-view-all{display:none!important}
+.home-view-all-bottom{display:block;width:100%;padding:.45rem 0 .1rem;text-align:center;font-size:10px;font-weight:900;color:var(--themeAccent);background:transparent;border:0}
+.stats-syllabus-collapsed .stats-syllabus-details{display:none!important}
+</style>
+<script>
+(function(){'use strict';
+  function rebuildHomeTaskHeader6(){
+    const list=document.getElementById('homeEnlargedTasksList');if(!list)return;
+    const section=list.closest('.rounded-3xl');if(!section)return;
+    let heading=section.querySelector('h4');if(!heading)return;
+    // Normalize header to one line: title + completion count + add task.
+    let row=document.getElementById('homeTasksHeaderRow');
+    if(!row){
+      const originalWrap=heading.parentElement;
+      row=document.createElement('div');row.id='homeTasksHeaderRow';
+      const left=document.createElement('div');left.id='homeTasksHeaderLeft';left.className='min-w-0 flex items-center gap-2 flex-1';
+      const actions=document.createElement('div');actions.id='homeTasksHeaderActions';actions.className='flex items-center gap-1 shrink-0';
+      row.append(left,actions);originalWrap.parentElement.insertBefore(row,originalWrap);originalWrap.remove();
+      left.appendChild(heading);
+    }
+    const left=document.getElementById('homeTasksHeaderLeft'),actions=document.getElementById('homeTasksHeaderActions');
+    if(!left||!actions)return;
+    const badge=document.getElementById('homeTodayTasksCountBadge');
+    if(badge){badge.className='text-[9px] font-bold text-themeAccent bg-themeCardSoft px-2 py-0.5 rounded-full whitespace-nowrap';left.appendChild(badge);}
+    const next=document.getElementById('homeNextUpLine');if(next){next.className='text-[9px] font-bold text-themeAccent mt-1 truncate';if(next.parentElement!==section.querySelector('#homeTasksHeaderLeft')){left.parentElement?.appendChild(next);}}
+    // Existing buttons: keep Add Task in header; move View All below the task list.
+    const btns=[...section.querySelectorAll('button')];
+    const add=btns.find(b=>/openAddTaskModal/.test(b.getAttribute('onclick')||''));
+    const view=btns.find(b=>/switchTab\('tasks'\)/.test(b.getAttribute('onclick')||''));
+    if(add){add.className='p-1.5 rounded-xl bg-themeCardSoft hover:bg-themeBorder text-themeAccent border border-themeBorder active:scale-95 transition';add.title='Add task';if(add.parentElement!==actions)actions.appendChild(add);}
+    if(view){view.classList.add('home-view-all');view.remove();}
+    const completedCard=document.getElementById('metricTodayTasks')?.closest('.rounded-2xl');if(completedCard)completedCard.classList.add('home-task-completed-card-hidden');
+    let bottom=section.querySelector('.home-view-all-bottom');if(!bottom){bottom=document.createElement('button');bottom.className='home-view-all-bottom';bottom.onclick=()=>switchTab('tasks');list.after(bottom);} 
+    const count=(appState.tasks||[]).filter(t=>t.date===getLocalYMD()).length;bottom.style.display=count>4?'block':'none';bottom.textContent=count>4?'View all →':'';
+  }
+  const rh=window.renderHome;window.renderHome=function(){if(typeof rh==='function')rh();rebuildHomeTaskHeader6();updateExamCountdown6b();};
+  function updateExamCountdown6b(){const d=document.getElementById('homeDaysLeftHero'),t=document.getElementById('homeCountdownPrecisionTicker');if(!d||!t||!appState.examDate)return;let ms=new Date(appState.examDate+'T00:00:00')-new Date();if(ms<=0){d.textContent='0';t.textContent='Exam Finished / Today!';return;}const days=Math.floor(ms/86400000);ms-=days*86400000;const h=Math.floor(ms/3600000);ms-=h*3600000;const m=Math.floor(ms/60000);ms-=m*60000;const s=Math.floor(ms/1000);d.textContent=days;t.textContent=`${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;}
+  setInterval(()=>{if(currentTab==='home'){rebuildHomeTaskHeader6();updateExamCountdown6b();}},1000);
+
+  // Stats syllabus coverage: collapsed by default, expandable without changing its data.
+  function compactStatsCoverage6(){const c=document.getElementById('statsSyllabusCoverage');if(!c)return;let head=c.querySelector('.stats-syllabus-head');if(!head){head=document.createElement('div');head.className='stats-syllabus-head flex justify-between items-center cursor-pointer';c.insertBefore(head,c.firstChild);}const existing=[...c.children];let title=existing.find(x=>x.querySelector?.('h4'));if(!title)return;const details=[...c.children].filter(x=>x!==head);if(!head.dataset.ready){const firstTitle=title.querySelector('h4')?.textContent||'📚 SYLLABUS COVERAGE';const pct=title.querySelector('span.text-xl')?.textContent||'';head.innerHTML=`<div><h4 class="text-xs font-black uppercase tracking-wider">${esc(firstTitle.replace('📚 SYLLABUS COVERAGE','').trim())}</h4><p class="text-[10px] text-themeMuted">Live from your Syllabus chapter statuses</p></div><div class="flex items-center gap-2"><span class="text-xl font-black text-themeAccent">${esc(pct)}</span><span class="text-[10px] font-black text-themeAccent">Expand ▾</span></div>`;head.dataset.ready='1';head.onclick=()=>{const collapsed=c.classList.toggle('stats-syllabus-collapsed');head.querySelector('span:last-child').textContent=collapsed?'Expand ▾':'Collapse ▴';};details.forEach(x=>x.classList.add('stats-syllabus-details'));c.classList.add('stats-syllabus-collapsed');}}
+  const rs=window.renderStatistics;window.renderStatistics=function(){if(typeof rs==='function')rs();removeStudyDistribution6();setTimeout(compactStatsCoverage6,0);};
+  document.addEventListener('DOMContentLoaded',()=>{rebuildHomeTaskHeader6();updateExamCountdown6b();removeStudyDistribution6();setTimeout(compactStatsCoverage6,50);});
+})();
+</script>
+
 </body>
 </html>
