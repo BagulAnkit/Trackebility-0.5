@@ -13,6 +13,7 @@
   <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     tailwind.config = {
@@ -190,6 +191,9 @@
       </button>
       <button onclick="openModal('settingsModal')" title="Settings & Customization" class="p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-themeMuted hover:text-themeText active:scale-95 transition">
         <i data-lucide="settings" class="w-4 h-4"></i>
+      </button>
+      <button onclick="openAccountModal()" title="Account & Cloud Sync" class="p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-themeMuted hover:text-themeText active:scale-95 transition">
+        <i data-lucide="cloud" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
@@ -1228,6 +1232,69 @@
     </div>
   </div>
 
+  <!-- ACCOUNT / CLOUD SYNC MODAL -->
+  <div id="accountModal" class="hidden fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-4 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-black">TRACKEBILITY Account</h3>
+          <p id="accountStatusText" class="text-[10px] text-themeMuted mt-0.5">Guest mode • data stays on this device</p>
+        </div>
+        <button onclick="closeModal('accountModal')" class="text-themeMuted"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div id="accountSignedOutPanel" class="space-y-3">
+        <div class="p-3 rounded-2xl bg-themeCardSoft border border-themeBorder">
+          <p class="text-[10px] font-bold text-themeText">☁️ Sync your study data across devices</p>
+          <p class="text-[9px] text-themeMuted mt-1">Create an account to keep your tasks, focus logs, MCQs, GTs, tracker data and settings in the cloud.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="accountSignInTab" onclick="setAccountMode('signin')" class="py-2.5 rounded-xl bg-themeAccent text-white text-xs font-black">Sign In</button>
+          <button id="accountSignUpTab" onclick="setAccountMode('signup')" class="py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black text-themeMuted">Create Account</button>
+        </div>
+        <input id="accountEmailInput" type="email" autocomplete="email" placeholder="Email address" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+        <input id="accountPasswordInput" type="password" autocomplete="current-password" placeholder="Password" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+        <div id="accountSignupFields" class="hidden space-y-2">
+          <input id="accountNameInput" type="text" autocomplete="name" placeholder="Name" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="accountAgeInput" type="number" min="13" max="100" placeholder="Age" class="p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+            <select id="accountCourseInput" class="p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText">
+              <option value="NEET PG">NEET PG</option>
+              <option value="INI-CET">INI-CET</option>
+            </select>
+          </div>
+          <input id="accountExamDateInput" type="date" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+        </div>
+        <button id="accountPrimaryButton" onclick="submitAccountAuth()" class="w-full py-3 rounded-2xl bg-themeAccent text-white text-xs font-black">Sign In</button>
+        <button id="accountForgotButton" onclick="sendPasswordReset()" class="w-full py-2 text-[10px] font-bold text-themeAccent">Forgot password?</button>
+        <button onclick="closeModal('accountModal')" class="w-full py-2 text-[10px] font-bold text-themeMuted">Continue as Guest</button>
+      </div>
+
+      <div id="accountSignedInPanel" class="hidden space-y-3">
+        <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] font-black text-emerald-400">● CLOUD ACCOUNT ACTIVE</span>
+            <span id="accountSyncStatus" class="text-[9px] text-themeMuted">Checking…</span>
+          </div>
+          <p id="accountEmailDisplay" class="text-[10px] text-themeMuted mt-1 break-all"></p>
+        </div>
+        <input id="accountProfileNameInput" type="text" placeholder="Name" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+        <div class="grid grid-cols-2 gap-2">
+          <input id="accountProfileAgeInput" type="number" min="13" max="100" placeholder="Age" class="p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+          <select id="accountProfileCourseInput" class="p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText">
+            <option value="NEET PG">NEET PG</option>
+            <option value="INI-CET">INI-CET</option>
+          </select>
+        </div>
+        <input id="accountProfileExamDateInput" type="date" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
+        <button onclick="saveCloudProfile()" class="w-full py-2.5 rounded-xl bg-themeAccent text-white text-xs font-black">Save Profile & Sync</button>
+        <button onclick="syncNowFromCloud()" class="w-full py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black">☁️ Sync Now</button>
+        <button onclick="sendPasswordReset()" class="w-full py-2 text-[10px] font-bold text-themeAccent">Change password</button>
+        <button onclick="signOutTrackebility()" class="w-full py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-black">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS MODAL -->
   <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-4 max-h-[85vh] overflow-y-auto custom-scroll">
@@ -1414,6 +1481,7 @@
       profileName: 'Doctor',
       examTitle: 'NEET PG 2027',
       examDate: '2027-03-14',
+      course: 'NEET PG',
       quote: 'Consistency beats intensity every single time.',
       dailyFocusGoalMinutes: 300,
       streak: 7,
@@ -5457,6 +5525,342 @@ document.addEventListener('DOMContentLoaded',function(){
     if(window.lucide)lucide.createIcons();
   },250);
 });
+})();
+</script>
+
+
+<script id="trackability-supabase-account-sync">
+(function(){
+  'use strict';
+
+  /* ============================================================
+     TRACKEBILITY SUPABASE ACCOUNT + CLOUD SYNC
+     Guest mode remains local-only. Signed-in users get cloud sync.
+     ============================================================ */
+  const SUPABASE_URL = 'https://xsxohmvvyrekemplrlre.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_EgHvOLWCB24PJKfBT9eZJg_mrjYQohJ';
+  const CLOUD_STATE_TABLE = 'app_state';
+  const PROFILE_TABLE = 'profiles';
+  const PENDING_MIGRATION_KEY = 'TRACKEBILITY_PENDING_CLOUD_MIGRATION';
+
+  let sb = null;
+  let currentUser = null;
+  let accountMode = 'signin';
+  let cloudSaveTimer = null;
+  let cloudSaveBusy = false;
+  let suppressCloudSave = false;
+
+  function accountToast(message, icon){
+    try { showToast(message, icon || 'cloud'); } catch(e) { console.log(message); }
+  }
+
+  function setAccountMode(mode){
+    accountMode = mode === 'signup' ? 'signup' : 'signin';
+    const signup = document.getElementById('accountSignupFields');
+    const primary = document.getElementById('accountPrimaryButton');
+    const forgot = document.getElementById('accountForgotButton');
+    const signInTab = document.getElementById('accountSignInTab');
+    const signUpTab = document.getElementById('accountSignUpTab');
+    if(signup) signup.classList.toggle('hidden', accountMode !== 'signup');
+    if(primary) primary.textContent = accountMode === 'signup' ? 'Create Account & Sync' : 'Sign In & Sync';
+    if(forgot) forgot.classList.toggle('hidden', accountMode === 'signup');
+    if(signInTab) signInTab.className = accountMode === 'signin' ? 'py-2.5 rounded-xl bg-themeAccent text-white text-xs font-black' : 'py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black text-themeMuted';
+    if(signUpTab) signUpTab.className = accountMode === 'signup' ? 'py-2.5 rounded-xl bg-themeAccent text-white text-xs font-black' : 'py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black text-themeMuted';
+  }
+  window.setAccountMode = setAccountMode;
+
+  function setSyncStatus(text){
+    const el=document.getElementById('accountSyncStatus');
+    if(el) el.textContent=text;
+  }
+
+  function populateAccountUI(){
+    const signedOut = document.getElementById('accountSignedOutPanel');
+    const signedIn = document.getElementById('accountSignedInPanel');
+    const status = document.getElementById('accountStatusText');
+    if(!signedOut || !signedIn) return;
+    const isIn=!!currentUser;
+    signedOut.classList.toggle('hidden',isIn);
+    signedIn.classList.toggle('hidden',!isIn);
+    if(status) status.textContent=isIn ? 'Cloud account • sync enabled' : 'Guest mode • data stays on this device';
+    if(isIn){
+      const email=currentUser.email||'';
+      const ed=document.getElementById('accountEmailDisplay'); if(ed) ed.textContent=email;
+      const p=appState.cloudProfile||{};
+      const n=document.getElementById('accountProfileNameInput'); if(n) n.value=p.name || appState.profileName || '';
+      const a=document.getElementById('accountProfileAgeInput'); if(a) a.value=p.age ?? '';
+      const c=document.getElementById('accountProfileCourseInput'); if(c) c.value=p.course || appState.course || 'NEET PG';
+      const d=document.getElementById('accountProfileExamDateInput'); if(d) d.value=p.exam_date || appState.examDate || '';
+    } else {
+      setAccountMode(accountMode);
+      const name=document.getElementById('accountNameInput'); if(name && !name.value) name.value=appState.profileName==='Doctor'?'':(appState.profileName||'');
+      const course=document.getElementById('accountCourseInput'); if(course) course.value=appState.course || 'NEET PG';
+      const date=document.getElementById('accountExamDateInput'); if(date) date.value=appState.examDate || '';
+    }
+  }
+
+  async function initSupabase(){
+    if(!window.supabase || !window.supabase.createClient){
+      console.error('Supabase JS CDN failed to load.');
+      return;
+    }
+    try{
+      sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+      const result=await sb.auth.getSession();
+      currentUser=result.data?.session?.user || null;
+      if(currentUser) await finishSignedInBootstrap(false);
+      sb.auth.onAuthStateChange(function(event,session){
+        currentUser=session?.user || null;
+        setTimeout(async function(){
+          if(currentUser){ await finishSignedInBootstrap(event==='SIGNED_IN'); }
+          else { populateAccountUI(); }
+        },0);
+      });
+      populateAccountUI();
+    }catch(err){
+      console.error('Supabase initialization error',err);
+      accountToast('Cloud connection could not start','alert-circle');
+    }
+  }
+
+  async function finishSignedInBootstrap(fromFreshSignIn){
+    populateAccountUI();
+    if(!currentUser || !sb) return;
+    try{
+      const {data,error}=await sb.from(PROFILE_TABLE).select('*').eq('user_id',currentUser.id).maybeSingle();
+      if(error) throw error;
+      if(data){
+        appState.cloudProfile={name:data.name||'',age:data.age??'',course:data.course||'NEET PG',exam_date:data.exam_date||''};
+        appState.profileName=data.name || appState.profileName;
+        appState.course=data.course || appState.course || 'NEET PG';
+        if(data.exam_date) appState.examDate=data.exam_date;
+        saveLocalOnly();
+      }
+    }catch(err){
+      console.warn('Profile read failed:',err);
+    }
+
+    const pending=localStorage.getItem(PENDING_MIGRATION_KEY)==='1';
+    const {data:cloudRow,error:stateError}=await sb.from(CLOUD_STATE_TABLE).select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
+    if(stateError){
+      console.error('Cloud state read failed:',stateError);
+      setSyncStatus('Cloud table not ready');
+      accountToast('Run the Supabase SQL setup first','alert-circle');
+      populateAccountUI();
+      return;
+    }
+
+    if(pending && !cloudRow){
+      await uploadCloudState(true);
+      localStorage.removeItem(PENDING_MIGRATION_KEY);
+      accountToast('Your guest data is now synced ☁️');
+    } else if(cloudRow && fromFreshSignIn){
+      const useCloud=confirm('A cloud copy of this account was found.\n\nOK = load the cloud copy\nCancel = keep this device data and upload it to the cloud');
+      if(useCloud) await applyCloudRow(cloudRow);
+      else await uploadCloudState(true);
+    } else if(cloudRow && !pending){
+      await applyCloudRow(cloudRow);
+    }
+    populateAccountUI();
+    setSyncStatus('Synced');
+  }
+
+  function saveLocalOnly(){
+    try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(appState)); }catch(e){ console.warn(e); }
+  }
+
+  async function applyCloudRow(row){
+    if(!row?.data) return;
+    suppressCloudSave=true;
+    try{
+      const incoming=typeof row.data==='string'?JSON.parse(row.data):row.data;
+      if(incoming && typeof incoming==='object') appState=Object.assign(appState,incoming);
+      saveLocalOnly();
+      if(typeof applyBodyClasses==='function') applyBodyClasses();
+      if(typeof populateSubjectDropdowns==='function') populateSubjectDropdowns();
+      if(typeof refreshAllViews==='function') refreshAllViews();
+      accountToast('Cloud data loaded ☁️');
+    }catch(err){ console.error('Cloud state parse failed',err); }
+    finally{ suppressCloudSave=false; }
+  }
+
+  async function uploadCloudState(showMessage){
+    if(!sb || !currentUser || suppressCloudSave) return false;
+    if(cloudSaveBusy){ return false; }
+    cloudSaveBusy=true;
+    setSyncStatus('Syncing…');
+    try{
+      const payload={user_id:currentUser.id,data:appState,updated_at:new Date().toISOString()};
+      const {error}=await sb.from(CLOUD_STATE_TABLE).upsert(payload,{onConflict:'user_id'});
+      if(error) throw error;
+      setSyncStatus('Synced');
+      if(showMessage) accountToast('Data synced to cloud ☁️');
+      return true;
+    }catch(err){
+      console.error('Cloud save failed:',err);
+      setSyncStatus('Sync failed');
+      if(showMessage) accountToast(err.message||'Cloud sync failed','alert-circle');
+      return false;
+    }finally{ cloudSaveBusy=false; }
+  }
+
+  function scheduleCloudSave(){
+    if(!currentUser || suppressCloudSave) return;
+    clearTimeout(cloudSaveTimer);
+    setSyncStatus('Changes pending…');
+    cloudSaveTimer=setTimeout(function(){ uploadCloudState(false); },900);
+  }
+
+  async function saveProfileRow(profile){
+    if(!sb || !currentUser) return;
+    const payload={user_id:currentUser.id,name:profile.name||'Doctor',age:profile.age===''||profile.age==null?null:Number(profile.age),course:profile.course==='INI-CET'?'INI-CET':'NEET PG',exam_date:profile.exam_date||null,email:currentUser.email||null,updated_at:new Date().toISOString()};
+    const {error}=await sb.from(PROFILE_TABLE).upsert(payload,{onConflict:'user_id'});
+    if(error) throw error;
+    appState.cloudProfile={name:payload.name,age:payload.age,course:payload.course,exam_date:payload.exam_date||''};
+    appState.profileName=payload.name;
+    appState.course=payload.course;
+    if(payload.exam_date) appState.examDate=payload.exam_date;
+    saveLocalOnly();
+    if(typeof renderHome==='function') renderHome();
+  }
+
+  async function submitAccountAuth(){
+    if(!sb){ accountToast('Cloud connection is not ready','alert-circle'); return; }
+    const email=(document.getElementById('accountEmailInput')?.value||'').trim();
+    const password=document.getElementById('accountPasswordInput')?.value||'';
+    if(!email || !password){ accountToast('Enter your email and password','alert-circle'); return; }
+    if(password.length<6){ accountToast('Password must be at least 6 characters','alert-circle'); return; }
+    const button=document.getElementById('accountPrimaryButton'); if(button){button.disabled=true;button.textContent='Please wait…';}
+    try{
+      if(accountMode==='signup'){
+        const name=(document.getElementById('accountNameInput')?.value||'').trim() || 'Doctor';
+        const age=(document.getElementById('accountAgeInput')?.value||'').trim();
+        const course=document.getElementById('accountCourseInput')?.value==='INI-CET'?'INI-CET':'NEET PG';
+        const examDate=document.getElementById('accountExamDateInput')?.value || appState.examDate || null;
+        const {data,error}=await sb.auth.signUp({email,password,options:{data:{name,age:age?Number(age):null,course,exam_date:examDate},emailRedirectTo:window.location.origin+window.location.pathname}});
+        if(error) throw error;
+        localStorage.setItem(PENDING_MIGRATION_KEY,'1');
+        appState.profileName=name;appState.course=course;if(examDate)appState.examDate=examDate;saveLocalOnly();
+        if(data.session){
+          currentUser=data.user;
+          await saveProfileRow({name,age,course,exam_date:examDate});
+          await uploadCloudState(true);
+          localStorage.removeItem(PENDING_MIGRATION_KEY);
+          populateAccountUI();
+          accountToast('Account created and data synced ☁️');
+        }else{
+          closeModal('accountModal');
+          alert('Account created. Please check your email to confirm the account, then sign in to complete cloud sync.');
+        }
+      }else{
+        const {data,error}=await sb.auth.signInWithPassword({email,password});
+        if(error) throw error;
+        currentUser=data.user;
+        await finishSignedInBootstrap(true);
+        populateAccountUI();
+        accountToast('Signed in successfully ☁️');
+      }
+    }catch(err){
+      console.error('Account auth error:',err);
+      accountToast(err.message||'Authentication failed','alert-circle');
+    }finally{
+      if(button){button.disabled=false;button.textContent=accountMode==='signup'?'Create Account & Sync':'Sign In & Sync';}
+    }
+  }
+  window.submitAccountAuth=submitAccountAuth;
+
+  async function sendPasswordReset(){
+    if(!sb){accountToast('Cloud connection is not ready','alert-circle');return;}
+    const email=(document.getElementById('accountEmailInput')?.value||currentUser?.email||'').trim();
+    if(!email){accountToast('Enter your email first','alert-circle');return;}
+    try{
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+      if(error) throw error;
+      accountToast('Password reset email sent');
+    }catch(err){accountToast(err.message||'Could not send reset email','alert-circle');}
+  }
+  window.sendPasswordReset=sendPasswordReset;
+
+  async function saveCloudProfile(){
+    try{
+      const name=(document.getElementById('accountProfileNameInput')?.value||'').trim()||'Doctor';
+      const age=(document.getElementById('accountProfileAgeInput')?.value||'').trim();
+      const course=document.getElementById('accountProfileCourseInput')?.value==='INI-CET'?'INI-CET':'NEET PG';
+      const examDate=document.getElementById('accountProfileExamDateInput')?.value||'';
+      await saveProfileRow({name,age,course,exam_date:examDate});
+      await uploadCloudState(true);
+      populateAccountUI();
+    }catch(err){accountToast(err.message||'Could not save profile','alert-circle');}
+  }
+  window.saveCloudProfile=saveCloudProfile;
+
+  async function syncNowFromCloud(){
+    if(!sb || !currentUser){accountToast('Sign in first','alert-circle');return;}
+    try{
+      setSyncStatus('Loading…');
+      const {data,error}=await sb.from(CLOUD_STATE_TABLE).select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
+      if(error) throw error;
+      if(data) await applyCloudRow(data); else accountToast('No cloud data found yet');
+      setSyncStatus('Synced');
+    }catch(err){setSyncStatus('Sync failed');accountToast(err.message||'Could not load cloud data','alert-circle');}
+  }
+  window.syncNowFromCloud=syncNowFromCloud;
+
+  async function signOutTrackebility(){
+    try{
+      await uploadCloudState(false);
+      if(sb) await sb.auth.signOut();
+      currentUser=null;
+      populateAccountUI();
+      closeModal('accountModal');
+      accountToast('Signed out. Guest mode restored');
+    }catch(err){accountToast(err.message||'Sign out failed','alert-circle');}
+  }
+  window.signOutTrackebility=signOutTrackebility;
+
+  function openAccountModal(){
+    populateAccountUI();
+    openModal('accountModal');
+    if(window.lucide) lucide.createIcons();
+  }
+  window.openAccountModal=openAccountModal;
+
+  /* Extend the existing local save function so every existing feature keeps
+     working locally and signed-in users automatically queue a cloud save. */
+  const originalSaveState=window.saveState;
+  window.saveState=function(){
+    try{ if(typeof originalSaveState==='function') originalSaveState(); else saveLocalOnly(); }
+    catch(e){ saveLocalOnly(); }
+    scheduleCloudSave();
+  };
+
+  const originalSaveGeneralSettings=window.saveGeneralSettings;
+  window.saveGeneralSettings=function(){
+    if(typeof originalSaveGeneralSettings==='function') originalSaveGeneralSettings();
+    if(currentUser){
+      const profile={
+        name:appState.profileName||'Doctor',
+        age:appState.cloudProfile?.age ?? '',
+        course:appState.course || appState.cloudProfile?.course || 'NEET PG',
+        exam_date:appState.examDate || ''
+      };
+      saveProfileRow(profile).then(()=>uploadCloudState(false)).catch(e=>console.warn('Profile sync failed',e));
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded',function(){
+    /* Keep current localStorage behaviour as the guest fallback. */
+    setTimeout(function(){
+      try{ initSupabase(); }catch(e){console.error(e);}
+      const header=document.getElementById('navProfileName');
+      if(header && !header.dataset.accountBound){
+        header.dataset.accountBound='1';
+        header.title='Open account & cloud sync';
+        header.onclick=function(){openAccountModal();};
+      }
+    },100);
+  });
+
 })();
 </script>
 
