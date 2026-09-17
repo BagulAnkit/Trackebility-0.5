@@ -4562,5 +4562,273 @@
     }catch(e){}
   },30000);
 })();
-</script>\n</body>
+</script>\n<style id="trackability-round7-styles">
+  /* Home task card: one container, compact controls, clean wrapping. */
+  #homeTasksUnifiedBox{min-height:190px}
+  #homeTasksUnifiedBox .home-task-name{overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.35}
+  #homeTasksUnifiedBox .home-task-row{min-width:0}
+  #homeTasksUnifiedBox .home-task-main{min-width:0;flex:1 1 auto}
+  #homeTasksUnifiedBox .home-task-check{flex:0 0 auto}
+  #homeTasksUnifiedBox .home-section-label{font-size:8px;line-height:1;text-transform:uppercase;letter-spacing:.09em;font-weight:900;color:var(--muted-color)}
+  #homeTasksUnifiedBox .home-next-row{border-top:1px solid var(--border-color);padding-top:10px;margin-top:10px}
+  #homeTasksUnifiedBox .home-ongoing-row{border-radius:14px;padding:10px;background:var(--card-soft);border:1px solid var(--accent-color);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent-color) 25%,transparent),0 0 18px var(--accent-glow)}
+  #homeTasksUnifiedBox .home-ongoing-row .home-live-dot{width:7px;height:7px;border-radius:999px;background:var(--accent-color);box-shadow:0 0 10px var(--accent-color);animation:homeLivePulse 1.4s ease-in-out infinite}
+  #homeTasksUnifiedBox .home-next-row .home-task-row{padding:0}
+  #homeTasksUnifiedBox .home-task-actions{flex:0 0 auto}
+  #homeTasksUnifiedBox .home-small-link{font-size:9px;font-weight:900;color:var(--accent-color);padding:3px 5px}
+  #homeTasksUnifiedBox .home-empty{padding:14px 4px;text-align:center;color:var(--muted-color);font-size:10px}
+  @keyframes homeLivePulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1)}}
+
+  /* Sleep / Reviews tracker cards and monthly calendars. */
+  .tracker-inline-month{border:1px solid var(--border-color);background:var(--card);border-radius:16px;padding:10px}
+  .tracker-inline-month .month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+  .tracker-inline-month .month-day{height:27px;border-radius:8px;border:1px solid transparent;background:var(--card-soft);font-size:9px;font-weight:800;color:var(--text-color);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+  .tracker-inline-month .month-day.today{border-color:var(--accent-color);color:var(--accent-color)}
+  .tracker-inline-month .month-day.selected{background:var(--accent-color);color:white}
+  .tracker-inline-month .month-day.has-data::after{content:'';position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#34d399}
+  .tracker-inline-month .month-day.selected.has-data::after{background:white}
+  .tracker-log-card{border:1px solid var(--border-color);background:var(--card);border-radius:16px;padding:11px}
+  .tracker-log-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .sleep-summary-card{border:1px solid var(--border-color);background:var(--card);border-radius:18px;padding:12px;overflow:hidden}
+  .sleep-ring{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent-color) var(--sleep-pct,0%),var(--card-soft) 0);position:relative;flex:0 0 auto}
+  .sleep-ring::after{content:'';position:absolute;inset:8px;border-radius:50%;background:var(--card)}
+  .sleep-ring-content{position:relative;z-index:1;text-align:center}
+  .sleep-chart{height:76px;display:flex;align-items:flex-end;gap:5px;min-width:0}
+  .sleep-bar{flex:1;min-width:7px;border-radius:6px 6px 3px 3px;background:var(--accent-color);opacity:.75}
+  .sleep-bar-label{font-size:7px;color:var(--muted-color);text-align:center;margin-top:3px}
+</style>
+<script id="trackability-round7">
+(function(){
+  'use strict';
+  const esc=window.escapeHtml||(v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const pad=n=>String(n).padStart(2,'0');
+  const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const today=()=>getLocalYMD();
+  const getSub=id=>(appState.subjects||[]).find(s=>s.id===id);
+  const toMinutes=t=>t&&/^\d{2}:\d{2}$/.test(t)?Number(t.slice(0,2))*60+Number(t.slice(3,5)):null;
+  const fmt=t=>t&&typeof formatTime12h==='function'?formatTime12h(t):t||'';
+
+  /* ============================================================
+     HOME: one bordered Tasks & Schedule box.
+     ============================================================ */
+  function taskStatus(tasks){
+    const now=new Date();
+    const nm=now.getHours()*60+now.getMinutes();
+    const pending=tasks.filter(t=>!t.completed);
+    const ongoing=pending.filter(t=>{
+      const s=toMinutes(t.startTime),e=toMinutes(t.endTime);
+      return s!==null&&e!==null&&s<=nm&&nm<e;
+    }).sort((a,b)=>(toMinutes(a.startTime)-toMinutes(b.startTime)));
+    const upcoming=pending.filter(t=>{
+      const s=toMinutes(t.startTime); return s!==null&&s>nm;
+    }).sort((a,b)=>toMinutes(a.startTime)-toMinutes(b.startTime));
+    const allDay=pending.filter(t=>toMinutes(t.startTime)===null);
+    return {ongoing:ongoing[0]||null,next:upcoming[0]||allDay[0]||null};
+  }
+  function taskRow(t,kind){
+    const sub=getSub(t.subjectId);
+    const time=t.startTime?(fmt(t.startTime)+(t.endTime?' – '+fmt(t.endTime):'')):'All Day';
+    return `<div class="home-task-row flex items-start gap-2.5">
+      ${kind==='ongoing'?'<span class="home-live-dot mt-2 shrink-0" aria-label="Ongoing"></span>':''}
+      <button class="home-task-check w-5 h-5 mt-0.5 rounded-lg border flex items-center justify-center ${t.completed?'bg-emerald-500 border-emerald-500 text-white':'border-themeMuted text-themeMuted'}" onclick="toggleTaskDone('${esc(t.id)}')" title="${t.completed?'Mark pending':'Complete task'}">${t.completed?'<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>':''}</button>
+      <div class="home-task-main">
+        <div class="home-task-name text-xs font-black ${t.completed?'line-through text-themeMuted':'text-themeText'}">${esc(t.name)}</div>
+        <div class="flex items-center gap-2 flex-wrap text-[9px] text-themeMuted mt-1"><span>⏱ ${esc(time)}</span>${sub?`<span class="font-bold" style="color:${esc(sub.color||'var(--accent-color)')}">[${esc(sub.symbol||sub.name.slice(0,2).toUpperCase())}]</span>`:''}</div>
+      </div>
+    </div>`;
+  }
+  function renderUnifiedHomeTasks(){
+    const old=document.getElementById('homeEnlargedTasksList');
+    if(!old)return;
+    const section=old.closest('.rounded-3xl');
+    if(!section)return;
+    section.id='homeTasksUnifiedBox';
+    section.classList.remove('space-y-3');
+    const tasks=(appState.tasks||[]).filter(t=>t.date===today()).slice().sort((a,b)=>{
+      const aa=toMinutes(a.startTime),bb=toMinutes(b.startTime);
+      return (aa===null?9999:aa)-(bb===null?9999:bb)||(a.name||'').localeCompare(b.name||'');
+    });
+    const done=tasks.filter(t=>t.completed).length;
+    const {ongoing,next}=taskStatus(tasks);
+    section.innerHTML=`
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0 flex items-center gap-2">
+          <h4 class="text-xs font-black uppercase tracking-wider text-themeText">Today's Tasks & Schedule</h4>
+          <span class="text-[9px] font-black text-themeAccent bg-themeCardSoft px-2 py-0.5 rounded-full whitespace-nowrap">${done}/${tasks.length} DONE</span>
+        </div>
+        <button onclick="openAddTaskModal()" class="shrink-0 p-1.5 rounded-xl bg-themeCardSoft hover:bg-themeBorder text-themeAccent border border-themeBorder active:scale-95 transition" title="Add task"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+      </div>
+      <div class="mt-4">
+        <div class="home-section-label mb-2">Ongoing Task</div>
+        ${ongoing?`<div class="home-ongoing-row">${taskRow(ongoing,'ongoing')}</div>`:`<div class="home-empty">No task is currently ongoing.</div>`}
+        <div class="home-next-row">
+          <div class="home-section-label mb-2">Next Up</div>
+          ${next?`<div>${taskRow(next,'next')}</div>`:`<div class="home-empty">${tasks.length&&done===tasks.length?'All tasks completed 🎉':'No more scheduled tasks today.'}</div>`}
+        </div>
+      </div>
+      <div class="flex items-center justify-center gap-4 pt-2">
+        <button class="home-small-link" onclick="switchTab('tasks')">View all →</button>
+        <button class="home-small-link" onclick="openSchedulePanel('timeline')">Timeblock →</button>
+      </div>`;
+    if(window.lucide)lucide.createIcons();
+  }
+  const oldRenderHome=window.renderHome;
+  window.renderHome=function(){if(typeof oldRenderHome==='function')oldRenderHome();renderUnifiedHomeTasks();};
+
+  /* Keep the Home card live as the clock crosses task boundaries. */
+  setInterval(()=>{if(typeof currentTab==='undefined'||currentTab==='home')renderUnifiedHomeTasks();},15000);
+
+  /* Home Add Task always starts on today's date. */
+  const oldOpenAdd=window.openAddTaskModal;
+  window.openAddTaskModal=function(){
+    if(typeof currentTab==='undefined'||currentTab==='home')selectedCalendarDate=today();
+    if(typeof oldOpenAdd==='function')oldOpenAdd();
+    const d=document.getElementById('taskInputDate');if(d&&(typeof currentTab==='undefined'||currentTab==='home'))d.value=today();
+  };
+
+  /* ============================================================
+     SLEEP: manual modal + task synchronization + monthly view.
+     ============================================================ */
+  function ensureSleepModal(){
+    if(document.getElementById('sleepEntryModal'))return;
+    const m=document.createElement('div');m.id='sleepEntryModal';m.className='hidden fixed inset-0 z-[90] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4';
+    m.innerHTML=`<div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-3 max-h-[90vh] overflow-y-auto custom-scroll">
+      <div class="flex justify-between items-center"><h3 id="sleepEntryTitle" class="text-sm font-black uppercase">Log Sleep</h3><button onclick="closeModal('sleepEntryModal')" class="text-themeMuted"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <input type="hidden" id="sleepEntryId"><input type="hidden" id="sleepEntryTaskId">
+      <div><label class="text-[10px] font-bold text-themeMuted">Date</label><input id="sleepEntryDate" type="date" class="w-full mt-1 p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText"></div>
+      <div><label class="text-[10px] font-bold text-themeMuted">Time of sleep</label><input id="sleepEntryTime" type="time" class="w-full mt-1 p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText"></div>
+      <div><label class="text-[10px] font-bold text-themeMuted">Hours of sleep</label><input id="sleepEntryHours" type="number" min="0.1" max="24" step="0.1" placeholder="e.g. 7.5" class="w-full mt-1 p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText"></div>
+      <button onclick="saveSleepEntry()" class="w-full py-2.5 rounded-xl bg-themeAccent text-white text-xs font-black">Save Sleep</button>
+    </div>`;
+    document.body.appendChild(m);if(window.lucide)lucide.createIcons();
+  }
+  function openSleepEntry(log=null,task=null){
+    ensureSleepModal();
+    document.getElementById('sleepEntryTitle').textContent=log?'Edit Sleep':'Log Sleep';
+    document.getElementById('sleepEntryId').value=log?.id||'';
+    document.getElementById('sleepEntryTaskId').value=log?.taskId||task?.id||'';
+    document.getElementById('sleepEntryDate').value=log?.date||task?.date||today();
+    document.getElementById('sleepEntryTime').value=log?.sleepTime||task?.startTime||'23:00';
+    document.getElementById('sleepEntryHours').value=log?.hours??'';
+    openModal('sleepEntryModal');
+  }
+  window.openAddSleepEntry=()=>openSleepEntry();
+  window.openEditSleepEntry=id=>{const l=(appState.sleepLogs||[]).find(x=>x.id===id);if(l)openSleepEntry(l);};
+  window.saveSleepEntry=function(){
+    const id=document.getElementById('sleepEntryId').value;
+    const taskId=document.getElementById('sleepEntryTaskId').value||null;
+    const date=document.getElementById('sleepEntryDate').value||today();
+    const sleepTime=document.getElementById('sleepEntryTime').value||'';
+    const hours=Number(document.getElementById('sleepEntryHours').value);
+    if(!sleepTime){showToast('Enter time of sleep','alert-circle');return;}
+    if(!Number.isFinite(hours)||hours<=0||hours>24){showToast('Enter valid sleep hours','alert-circle');return;}
+    appState.sleepLogs=appState.sleepLogs||[];
+    let log=id?appState.sleepLogs.find(x=>x.id===id):null;
+    if(log){log.date=date;log.sleepTime=sleepTime;log.hours=hours;}
+    else{log={id:'slp_'+Date.now(),taskId,date,sleepTime,hours,taskName:taskId?((appState.tasks||[]).find(t=>t.id===taskId)?.name||'Sleep'): 'Manual Sleep'};appState.sleepLogs.unshift(log);}
+    const linkedTask=taskId?(appState.tasks||[]).find(t=>t.id===taskId):null;
+    if(linkedTask){linkedTask.completed=true;linkedTask.trackerLogged=true;linkedTask.sleepLogId=log.id;}
+    else{
+      const matching=(appState.tasks||[]).find(t=>t.date===date&&t.trackerType==='sleep'&&!t.completed);
+      if(matching){matching.completed=true;matching.trackerLogged=true;matching.sleepLogId=log.id;log.taskId=matching.id;}
+    }
+    saveState();closeModal('sleepEntryModal');refreshAllViews();renderSleepTracker();showToast('😴 Sleep saved');
+  };
+  window.deleteSleepEntry=function(id){const l=(appState.sleepLogs||[]).find(x=>x.id===id);if(!l)return;if(!confirm('Remove this sleep record?'))return;appState.sleepLogs=appState.sleepLogs.filter(x=>x.id!==id);if(l.taskId){const t=(appState.tasks||[]).find(x=>x.id===l.taskId);if(t){t.completed=false;t.trackerLogged=false;t.sleepLogId=null;}}saveState();refreshAllViews();renderSleepTracker();showToast('Sleep record removed');};
+  window.undoSleepEntry=function(id){const l=(appState.sleepLogs||[]).find(x=>x.id===id);if(!l)return;if(l.taskId){const t=(appState.tasks||[]).find(x=>x.id===l.taskId);if(t){t.completed=false;t.trackerLogged=false;t.sleepLogId=null;}}appState.sleepLogs=appState.sleepLogs.filter(x=>x.id!==id);saveState();refreshAllViews();renderSleepTracker();showToast('↩ Sleep undone and task restored');};
+
+  function monthCalendarHTML(kind,selected){
+    const cursor=window.__trackInlineMonths?.[kind]||new Date();
+    const y=cursor.getFullYear(),m=cursor.getMonth(),days=new Date(y,m+1,0).getDate(),first=(new Date(y,m,1).getDay()+6)%7;
+    const logs=kind==='sleep'?(appState.sleepLogs||[]):(appState.mistakeReviewLogs||[]);
+    let cells='';for(let i=0;i<first;i++)cells+='<span></span>';
+    for(let d=1;d<=days;d++){const date=`${y}-${pad(m+1)}-${pad(d)}`,has=logs.some(x=>x.date===date),sel=date===selected,todayFlag=date===today();cells+=`<button class="month-day ${sel?'selected ':''}${todayFlag?'today ':''}${has?'has-data':''}" onclick="selectInlineTrackerDate('${kind}','${date}')">${d}</button>`;}
+    return `<div class="tracker-inline-month"><div class="flex items-center justify-between mb-2"><button onclick="shiftInlineTrackerMonth('${kind}',-1)" class="p-1 rounded-lg bg-themeCardSoft text-themeMuted"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button><b class="text-[10px] font-black text-themeAccent">${cursor.toLocaleDateString('en-US',{month:'long',year:'numeric'})}</b><button onclick="shiftInlineTrackerMonth('${kind}',1)" class="p-1 rounded-lg bg-themeCardSoft text-themeMuted"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button></div><div class="grid grid-cols-7 gap-1 text-center text-[7px] font-black text-themeMuted mb-1"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="month-grid">${cells}</div></div>`;
+  }
+  window.__trackInlineMonths={sleep:new Date(),reviews:new Date()};
+  window.shiftInlineTrackerMonth=function(kind,delta){const d=window.__trackInlineMonths[kind]||new Date();d.setMonth(d.getMonth()+delta);window.__trackInlineMonths[kind]=d;if(kind==='sleep')renderSleepTracker();else renderMistakeReviewTracker();};
+  window.selectInlineTrackerDate=function(kind,date){trackerSelectedDate=date;if(kind==='sleep')renderSleepTracker();else renderMistakeReviewTracker();};
+
+  function sleepSummary(logs){
+    const selected=trackerSelectedDate||today();
+    const l=logs.filter(x=>x.date===selected);
+    const latest=l[0];const hours=latest?Number(latest.hours)||0:0;const pct=Math.min(100,Math.round(hours/8*100));
+    const recent=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=ymd(d);const x=(logs.filter(z=>z.date===ds).slice(-1)[0]);recent.push({d,x});}
+    const max=Math.max(8,...recent.map(x=>Number(x.x?.hours)||0));
+    return `<div class="sleep-summary-card"><div class="flex items-center gap-4"><div class="sleep-ring" style="--sleep-pct:${pct}%"><div class="sleep-ring-content"><b class="text-sm font-black">${hours?hours.toFixed(1):'0'}</b><div class="text-[7px] text-themeMuted">hours</div></div></div><div class="min-w-0"><div class="text-[8px] font-black uppercase text-themeMuted">Sleep Summary</div><div class="text-xs font-black text-themeText mt-1">${latest?`${latest.sleepTime||''} • ${hours.toFixed(1)} h`:'No sleep logged for this date'}</div><div class="sleep-chart mt-2">${recent.map(r=>{const h=Number(r.x?.hours)||0;const bh=h?Math.max(8,Math.round(h/max*58)):4;return `<div class="flex-1 min-w-0"><div class="sleep-bar" style="height:${bh}px;opacity:${h?.9:.2}"></div><div class="sleep-bar-label">${new Date(r.d+'T00:00:00').getDate()}</div></div>`}).join('')}</div></div></div></div>`;
+  }
+  window.renderSleepTracker=function(){
+    const table=document.getElementById('sleepLogTable');if(!table)return;
+    ensureSleepModal();
+    const logs=(appState.sleepLogs||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const selected=trackerSelectedDate||today();
+    const filtered=logs.filter(x=>x.date===selected);
+    const mod=document.getElementById('trackerMod-sleep');
+    if(mod){mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Sleep Ledger</h3><p class="text-[10px] text-themeMuted">Track sleep by date and keep Sleep tasks synchronized.</p></div><button onclick="openAddSleepEntry()" class="px-3 py-1.5 rounded-xl bg-themeAccent text-white text-xs font-bold">+ Log Sleep</button></div>${monthCalendarHTML('sleep',selected)}${sleepSummary(logs)}<div class="flex items-center justify-between"><span class="text-[9px] font-black uppercase text-themeMuted">${selected}</span><button onclick="trackerSelectedDate='';renderSleepTracker()" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div id="sleepLogTable" class="space-y-2">${filtered.length?filtered.map(l=>`<div class="tracker-log-card"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] font-black uppercase text-themeMuted">${esc(l.date)}</div><div class="text-xs font-black text-themeText mt-0.5">😴 ${esc(l.sleepTime||'')} • ${Number(l.hours).toFixed(1)} hours</div><div class="text-[9px] text-themeMuted mt-1">${esc(l.taskName||'Manual Sleep')}</div></div><div class="tracker-log-actions"><button onclick="openEditSleepEntry('${esc(l.id)}')" class="text-[9px] font-black text-themeAccent">Edit</button><button onclick="undoSleepEntry('${esc(l.id)}')" class="text-[9px] font-black text-amber-400">Undo</button><button onclick="deleteSleepEntry('${esc(l.id)}')" class="text-[9px] font-black text-rose-400">Remove</button></div></div></div>`).join(''):'<div class="text-center text-[10px] text-themeMuted py-5">No sleep record for this date.</div>'}</div>`;}
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ============================================================
+     REVIEWS: monthly calendar + edit/remove/undo + task sync.
+     ============================================================ */
+  window.editReviewLog=function(id){
+    const l=(appState.mistakeReviewLogs||[]).find(x=>x.id===id);if(!l)return;
+    const title=prompt('Review title:',l.title||'Mistake Book Review');if(title===null)return;
+    const date=prompt('Date (YYYY-MM-DD):',l.date||today());if(date===null)return;
+    l.title=title.trim()||'Mistake Book Review';l.date=date.trim()||today();saveState();refreshAllViews();renderMistakeReviewTracker();showToast('Review updated');
+  };
+  window.deleteReviewLog=function(id){const l=(appState.mistakeReviewLogs||[]).find(x=>x.id===id);if(!l)return;if(!confirm('Remove this review record?'))return;appState.mistakeReviewLogs=appState.mistakeReviewLogs.filter(x=>x.id!==id);if(l.taskId){const t=(appState.tasks||[]).find(x=>x.id===l.taskId);if(t){t.completed=false;t.trackerLogged=false;t.reviewLogId=null;}}saveState();refreshAllViews();renderMistakeReviewTracker();showToast('Review record removed');};
+  window.undoReviewLog=function(id){const l=(appState.mistakeReviewLogs||[]).find(x=>x.id===id);if(!l)return;if(l.taskId){const t=(appState.tasks||[]).find(x=>x.id===l.taskId);if(t){t.completed=false;t.trackerLogged=false;t.reviewLogId=null;}}appState.mistakeReviewLogs=appState.mistakeReviewLogs.filter(x=>x.id!==id);saveState();refreshAllViews();renderMistakeReviewTracker();showToast('↩ Review undone and task restored');};
+  window.renderMistakeReviewTracker=function(){
+    const mod=document.getElementById('trackerMod-reviews');if(!mod)return;const logs=(appState.mistakeReviewLogs||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));const selected=trackerSelectedDate||today();const filtered=logs.filter(x=>x.date===selected);
+    mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Reviews Ledger</h3><p class="text-[10px] text-themeMuted">Review records stay linked to their Tasks.</p></div><span class="text-[9px] font-black text-themeAccent bg-themeCardSoft px-2 py-1 rounded-lg">${logs.length} total</span></div>${monthCalendarHTML('reviews',selected)}<div class="flex items-center justify-between"><span class="text-[9px] font-black uppercase text-themeMuted">${selected}</span><button onclick="trackerSelectedDate='';renderMistakeReviewTracker()" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div id="reviewLogTable" class="space-y-2">${filtered.length?filtered.map(l=>`<div class="tracker-log-card"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] font-black uppercase text-themeMuted">${esc(l.date)}</div><div class="text-xs font-black text-themeText mt-0.5">⚠️ ${esc(l.title||'Mistake Book Review')}</div></div><div class="tracker-log-actions"><button onclick="editReviewLog('${esc(l.id)}')" class="text-[9px] font-black text-themeAccent">Edit</button><button onclick="undoReviewLog('${esc(l.id)}')" class="text-[9px] font-black text-amber-400">Undo</button><button onclick="deleteReviewLog('${esc(l.id)}')" class="text-[9px] font-black text-rose-400">Remove</button></div></div></div>`).join(''):'<div class="text-center text-[10px] text-themeMuted py-5">No review record for this date.</div>'}</div>`;
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* ============================================================
+     TASK LINK OVERRIDES for Sleep + Review.
+     ============================================================ */
+  const oldToggle=window.toggleTaskDone;
+  window.toggleTaskDone=function(id){
+    const t=(appState.tasks||[]).find(x=>x.id===id);
+    if(t?.trackerType==='sleep'){
+      if(t.completed){const l=(appState.sleepLogs||[]).find(x=>x.taskId===t.id);if(l){appState.sleepLogs=appState.sleepLogs.filter(x=>x.id!==l.id);}t.completed=false;t.trackerLogged=false;t.sleepLogId=null;saveState();refreshAllViews();renderSleepTracker();showToast('↩ Sleep task undone');}
+      else openSleepEntry(null,t);
+      return;
+    }
+    if(t?.trackerType==='mistake_review'){
+      if(t.completed){const l=(appState.mistakeReviewLogs||[]).find(x=>x.taskId===t.id);if(l){appState.mistakeReviewLogs=appState.mistakeReviewLogs.filter(x=>x.id!==l.id);}t.completed=false;t.trackerLogged=false;t.reviewLogId=null;saveState();refreshAllViews();renderMistakeReviewTracker();showToast('↩ Review task undone');}
+      else{
+        appState.mistakeReviewLogs=appState.mistakeReviewLogs||[];const l={id:'mrv_'+Date.now(),taskId:t.id,date:t.date||today(),title:t.name};appState.mistakeReviewLogs.unshift(l);t.completed=true;t.trackerLogged=true;t.reviewLogId=l.id;saveState();refreshAllViews();renderMistakeReviewTracker();showToast('⚠️ Review logged & task completed');
+      }
+      return;
+    }
+    if(typeof oldToggle==='function')return oldToggle(id);
+  };
+
+  /* If the existing task completion function is called directly by older UI, keep sleep/review in sync. */
+  const oldComplete=window.completeTaskWithTracker;
+  window.completeTaskWithTracker=function(t){
+    if(t?.trackerType==='sleep'){openSleepEntry(null,t);return;}
+    if(t?.trackerType==='mistake_review'){
+      appState.mistakeReviewLogs=appState.mistakeReviewLogs||[];const existing=appState.mistakeReviewLogs.find(x=>x.taskId===t.id);if(existing){t.completed=true;t.trackerLogged=true;return;}const l={id:'mrv_'+Date.now(),taskId:t.id,date:t.date||today(),title:t.name};appState.mistakeReviewLogs.unshift(l);t.completed=true;t.trackerLogged=true;t.reviewLogId=l.id;saveState();refreshAllViews();renderMistakeReviewTracker();return;
+    }
+    if(typeof oldComplete==='function')return oldComplete(t);
+  };
+
+  /* Remove the global duplicate mini-calendar while preserving the new per-tracker monthly calendars. */
+  function removeGlobalMiniCalendar(){const w=document.getElementById('trackerMiniCalendarWrap');if(w)w.remove();}
+
+  function initRound7(){
+    removeGlobalMiniCalendar();ensureSleepModal();
+    if(typeof renderSleepTracker==='function'&&activeTrackerModule==='sleep')renderSleepTracker();
+    if(typeof renderMistakeReviewTracker==='function'&&activeTrackerModule==='reviews')renderMistakeReviewTracker();
+    if(typeof renderHome==='function'&&currentTab==='home')renderHome();
+  }
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(initRound7,50));
+  setInterval(()=>{removeGlobalMiniCalendar();if(typeof currentTab==='undefined'||currentTab==='home')renderUnifiedHomeTasks();},15000);
+})();
+</script>
+
+</body>
 </html>
