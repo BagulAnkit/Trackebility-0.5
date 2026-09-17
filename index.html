@@ -1289,8 +1289,42 @@
         <input id="accountProfileExamDateInput" type="date" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText" />
         <button onclick="saveCloudProfile()" class="w-full py-2.5 rounded-xl bg-themeAccent text-white text-xs font-black">Save Profile & Sync</button>
         <button onclick="syncNowFromCloud()" class="w-full py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black">☁️ Sync Now</button>
+        <div class="pt-2 border-t border-themeBorder/60 space-y-2">
+          <div class="text-[9px] font-black uppercase tracking-wider text-themeMuted">Manual Data Control</div>
+          <button onclick="uploadDeviceToCloudManual()" class="w-full py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black text-themeText flex items-center justify-center gap-2">↑ Upload Device → Cloud</button>
+          <button onclick="downloadCloudToDeviceManual()" class="w-full py-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-black text-themeText flex items-center justify-center gap-2">↓ Download Cloud → Device</button>
+          <p class="text-[9px] leading-relaxed text-themeMuted">Sync Now checks both copies automatically. Manual controls let you choose exactly which copy to replace.</p>
+        </div>
         <button onclick="sendPasswordReset()" class="w-full py-2 text-[10px] font-bold text-themeAccent">Change password</button>
         <button onclick="signOutTrackebility()" class="w-full py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-black">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYNC CONFLICT MODAL -->
+  <div id="syncConflictModal" class="hidden fixed inset-0 z-[65] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-sm font-black text-themeText">Sync conflict</h3>
+          <p class="text-[10px] text-themeMuted mt-1">This device and the cloud both contain changes that are not yet the same.</p>
+        </div>
+        <button onclick="cancelSyncConflict()" class="p-1.5 rounded-xl bg-themeCardSoft text-themeMuted"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="p-3 rounded-2xl bg-themeCardSoft border border-themeBorder">
+          <div class="text-[9px] font-black uppercase text-themeAccent">This Device</div>
+          <div class="text-[10px] text-themeMuted mt-1">Keep the data currently on this device.</div>
+        </div>
+        <div class="p-3 rounded-2xl bg-themeCardSoft border border-themeBorder">
+          <div class="text-[9px] font-black uppercase text-emerald-400">Cloud</div>
+          <div class="text-[10px] text-themeMuted mt-1">Replace this device with the cloud copy.</div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <button onclick="resolveSyncConflict('upload')" class="w-full py-3 rounded-2xl bg-themeAccent text-white text-xs font-black">↑ Use This Device</button>
+        <button onclick="resolveSyncConflict('download')" class="w-full py-3 rounded-2xl bg-themeCardSoft border border-themeBorder text-themeText text-xs font-black">↓ Use Cloud Data</button>
+        <button onclick="cancelSyncConflict()" class="w-full py-2.5 rounded-xl text-xs font-bold text-themeMuted">Cancel</button>
       </div>
     </div>
   </div>
@@ -5543,6 +5577,7 @@ document.addEventListener('DOMContentLoaded',function(){
   const CLOUD_STATE_TABLE = 'app_data';
   const PROFILE_TABLE = 'profiles';
   const PENDING_MIGRATION_KEY = 'TRACKEBILITY_PENDING_CLOUD_MIGRATION';
+  const SYNC_META_PREFIX = 'TRACKEBILITY_SYNC_META_';
 
   let sb = null;
   let currentUser = null;
@@ -5551,6 +5586,29 @@ document.addEventListener('DOMContentLoaded',function(){
   let cloudSaveBusy = false;
   let suppressCloudSave = false;
   let bootstrapPromise = null;
+  let conflictContext = null;
+
+  function syncMetaKey(){ return SYNC_META_PREFIX + (currentUser?.id || 'guest'); }
+
+  function stableSyncString(value){
+    if(value === null || typeof value !== 'object') return JSON.stringify(value);
+    if(Array.isArray(value)) return '[' + value.map(stableSyncString).join(',') + ']';
+    return '{' + Object.keys(value).sort().map(k => JSON.stringify(k)+':'+stableSyncString(value[k])).join(',') + '}';
+  }
+
+  function hashSyncData(value){
+    const str=stableSyncString(value); let h=2166136261;
+    for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+    return (h>>>0).toString(16);
+  }
+
+  function getSyncMeta(){
+    try{return JSON.parse(localStorage.getItem(syncMetaKey())||'{}')||{};}catch(e){return {};}
+  }
+
+  function setSyncMeta(patch){
+    try{localStorage.setItem(syncMetaKey(),JSON.stringify(Object.assign(getSyncMeta(),patch)));}catch(e){}
+  }
 
   function accountToast(message, icon){
     try { showToast(message, icon || 'cloud'); } catch(e) { console.log(message); }
@@ -5818,18 +5876,105 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   window.saveCloudProfile=saveCloudProfile;
 
+  async function fetchCloudRow(){
+    if(!sb || !currentUser) throw new Error('Sign in first');
+    const {data,error}=await sb.from(CLOUD_STATE_TABLE).select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
+    if(error) throw error;
+    return data;
+  }
+
   async function syncNowFromCloud(){
     if(!sb || !currentUser){accountToast('Sign in first','alert-circle');return;}
+    if(cloudSaveBusy){accountToast('A sync is already in progress');return;}
     try{
-      setSyncStatus('Loading…');
-      const {data,error}=await sb.from(CLOUD_STATE_TABLE).select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
-      if(error) throw error;
-      if(data) await applyCloudRow(data,true);
-      else await uploadCloudState(true);
-      setSyncStatus('Synced');
-    }catch(err){setSyncStatus('Sync failed');accountToast(err.message||'Could not sync cloud data','alert-circle');}
+      clearTimeout(cloudSaveTimer);
+      setSyncStatus('Checking…');
+      const cloudRow=await fetchCloudRow();
+      if(!cloudRow){
+        await uploadCloudState(true);
+        return;
+      }
+      const localHash=hashSyncData(appState);
+      const cloudData=typeof cloudRow.data==='string'?JSON.parse(cloudRow.data):cloudRow.data;
+      const cloudHash=hashSyncData(cloudData||{});
+      const meta=getSyncMeta();
+      const lastHash=meta.lastSyncedHash||'';
+      const localChanged=!!lastHash && localHash!==lastHash;
+      const cloudChanged=!!lastHash && cloudHash!==lastHash;
+
+      if(!lastHash){
+        /* Existing cloud copy on a device that has no sync history: use cloud once. */
+        await applyCloudRow(cloudRow,true);
+      }else if(localChanged && cloudChanged && localHash!==cloudHash){
+        conflictContext={cloudRow};
+        setSyncStatus('Needs your choice');
+        openModal('syncConflictModal');
+        if(window.lucide)lucide.createIcons();
+        return;
+      }else if(cloudChanged && !localChanged){
+        await applyCloudRow(cloudRow,true);
+      }else if(localChanged && !cloudChanged){
+        await uploadCloudState(true);
+      }else if(localHash!==cloudHash){
+        await applyCloudRow(cloudRow,true);
+      }else{
+        setSyncMeta({lastSyncedHash:localHash,lastCloudUpdatedAt:cloudRow.updated_at||null,initialized:true});
+        setSyncStatus('Synced');
+        accountToast('Already up to date ✓');
+      }
+    }catch(err){
+      console.error('Sync check failed:',err);
+      setSyncStatus('Sync failed');
+      accountToast(err.message||'Could not sync cloud data','alert-circle');
+    }
   }
   window.syncNowFromCloud=syncNowFromCloud;
+
+  async function uploadDeviceToCloudManual(){
+    if(!sb || !currentUser){accountToast('Sign in first','alert-circle');return;}
+    if(!confirm('Upload this device data to the cloud? The current cloud copy will be replaced.')) return;
+    clearTimeout(cloudSaveTimer);
+    const ok=await uploadCloudState(true);
+    if(ok) accountToast('This device is now the cloud copy ☁️');
+  }
+  window.uploadDeviceToCloudManual=uploadDeviceToCloudManual;
+
+  async function downloadCloudToDeviceManual(){
+    if(!sb || !currentUser){accountToast('Sign in first','alert-circle');return;}
+    if(!confirm('Download the cloud data to this device? Your current device data will be replaced.')) return;
+    clearTimeout(cloudSaveTimer);
+    try{
+      setSyncStatus('Loading…');
+      const row=await fetchCloudRow();
+      if(!row){accountToast('No cloud data exists yet','alert-circle');setSyncStatus('No cloud copy');return;}
+      await applyCloudRow(row,true);
+      setSyncStatus('Synced');
+    }catch(err){setSyncStatus('Sync failed');accountToast(err.message||'Could not download cloud data','alert-circle');}
+  }
+  window.downloadCloudToDeviceManual=downloadCloudToDeviceManual;
+
+  function cancelSyncConflict(){
+    conflictContext=null;
+    closeModal('syncConflictModal');
+    setSyncStatus('Sync cancelled');
+  }
+  window.cancelSyncConflict=cancelSyncConflict;
+
+  async function resolveSyncConflict(choice){
+    const ctx=conflictContext;
+    if(!ctx) return cancelSyncConflict();
+    conflictContext=null;
+    closeModal('syncConflictModal');
+    try{
+      if(choice==='upload'){
+        await uploadCloudState(true);
+      }else if(choice==='download'){
+        await applyCloudRow(ctx.cloudRow,true);
+        setSyncStatus('Synced');
+      }
+    }catch(err){setSyncStatus('Sync failed');accountToast(err.message||'Could not resolve sync conflict','alert-circle');}
+  }
+  window.resolveSyncConflict=resolveSyncConflict;
 
   async function signOutTrackebility(){
     try{
