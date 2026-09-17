@@ -4832,3 +4832,234 @@
 
 </body>
 </html>
+
+<style id="trackability-user-fixes-20260917">
+  /* Task calendar: week navigation + expanded month mode */
+  #taskEnlargedMonthGrid button{min-width:0;overflow-wrap:anywhere;}
+  #taskWeekExpandBtn{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+  /* Home: one compact card with live ongoing/next-up hierarchy */
+  #homeTasksUnifiedBox .home-ongoing-row{animation:homeTaskGlow 1.8s ease-in-out infinite;}
+  @keyframes homeTaskGlow{0%,100%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent-color) 18%,transparent),0 0 8px color-mix(in srgb,var(--accent-color) 20%,transparent)}50%{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent-color) 42%,transparent),0 0 22px color-mix(in srgb,var(--accent-color) 55%,transparent)}}
+  #homeTasksUnifiedBox .home-empty{padding:8px 4px;}
+  #homeTasksUnifiedBox .home-next-row{margin-top:10px;padding-top:10px;}
+  #homeTasksUnifiedBox .home-small-link{white-space:nowrap;}
+  /* Search result readability */
+  #globalSearchResults button{min-width:0;overflow-wrap:anywhere;word-break:break-word;}
+  #globalSearchResults b,#globalSearchResults span{overflow-wrap:anywhere;word-break:break-word;white-space:normal;}
+</style>
+
+<script id="trackability-user-fixes-20260917">
+(function(){
+  'use strict';
+
+  const escF=window.escapeHtml||(v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const padF=n=>String(n).padStart(2,'0');
+  const ymdF=d=>`${d.getFullYear()}-${padF(d.getMonth()+1)}-${padF(d.getDate())}`;
+  const todayF=()=>ymdF(new Date());
+  const getSubF=id=>(appState.subjects||[]).find(s=>s.id===id);
+  const minsF=t=>t&&/^\d{2}:\d{2}$/.test(t)?Number(t.slice(0,2))*60+Number(t.slice(3,5)):null;
+  const fmtF=t=>typeof formatTime12h==='function'&&t?formatTime12h(t):t||'All Day';
+
+  /* ============================================================
+     HOME: source-of-truth task count + real-time Ongoing/Next Up
+     ============================================================ */
+  function renderHomeTasksFinal(){
+    const section=document.getElementById('homeTasksUnifiedBox')||document.getElementById('homeEnlargedTasksList')?.closest('.rounded-3xl');
+    if(!section)return;
+    section.id='homeTasksUnifiedBox';
+    const allToday=(appState.tasks||[]).filter(t=>String(t.date||'')===todayF());
+    const tasks=allToday.slice().sort((a,b)=>{
+      const am=minsF(a.startTime),bm=minsF(b.startTime);
+      return (am===null?1440:am)-(bm===null?1440:bm)||(a.name||'').localeCompare(b.name||'');
+    });
+    const now=new Date();
+    const nowM=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+    const pending=tasks.filter(t=>!t.completed);
+    const ongoing=pending.filter(t=>{
+      const s=minsF(t.startTime),e=minsF(t.endTime);
+      return s!==null&&e!==null&&s<=nowM&&nowM<e;
+    }).sort((a,b)=>minsF(a.startTime)-minsF(b.startTime))[0]||null;
+    const next=pending.filter(t=>{
+      const s=minsF(t.startTime);
+      return s!==null&&s>nowM;
+    }).sort((a,b)=>minsF(a.startTime)-minsF(b.startTime))[0]||null;
+    const allDay=pending.find(t=>minsF(t.startTime)===null)||null;
+    const nextTask=next||allDay;
+    const done=tasks.filter(t=>t.completed).length;
+
+    const row=t=>{
+      const sub=getSubF(t.subjectId);
+      const time=t.startTime?(fmtF(t.startTime)+(t.endTime?' – '+fmtF(t.endTime):'')):'All Day';
+      return `<div class="home-task-row flex items-start gap-2.5 min-w-0">
+        <button class="home-task-check w-5 h-5 mt-0.5 rounded-lg border flex items-center justify-center shrink-0 ${t.completed?'bg-emerald-500 border-emerald-500 text-white':'border-themeMuted text-themeMuted'}" onclick="toggleTaskDone('${escF(t.id)}')" title="${t.completed?'Mark pending':'Complete task'}">${t.completed?'<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>':''}</button>
+        <div class="home-task-main min-w-0 flex-1">
+          <div class="home-task-name text-xs font-black ${t.completed?'line-through text-themeMuted':'text-themeText'}">${escF(t.name)}</div>
+          <div class="flex items-center gap-2 flex-wrap text-[9px] text-themeMuted mt-1"><span>⏱ ${escF(time)}</span>${sub?`<span class="font-bold" style="color:${escF(sub.color||'var(--accent-color)')}">[${escF(sub.symbol||sub.name.slice(0,2).toUpperCase())}]</span>`:''}</div>
+        </div>
+      </div>`;
+    };
+
+    section.innerHTML=`
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0 flex items-center gap-2">
+          <h4 class="text-xs font-black uppercase tracking-wider text-themeText">Today's Tasks & Schedule</h4>
+          <span id="homeTodayTasksCountBadge" class="text-[9px] font-black text-themeAccent bg-themeCardSoft px-2 py-0.5 rounded-full whitespace-nowrap">${done}/${tasks.length} DONE</span>
+        </div>
+        <button onclick="openAddTaskModal()" class="shrink-0 p-1.5 rounded-xl bg-themeCardSoft hover:bg-themeBorder text-themeAccent border border-themeBorder active:scale-95 transition" title="Add Task"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+      </div>
+      <div class="mt-3">
+        <div class="home-section-label mb-1.5">Ongoing Task</div>
+        ${ongoing?`<div class="home-ongoing-row">${row(ongoing)}</div>`:`<div class="home-empty">No task is currently ongoing.</div>`}
+        <div class="home-next-row">
+          <div class="home-section-label mb-1.5">Next Up</div>
+          ${nextTask?`<div>${row(nextTask)}</div>`:`<div class="home-empty">${tasks.length&&done===tasks.length?'All tasks completed 🎉':'No more scheduled tasks today.'}</div>`}
+        </div>
+      </div>
+      <div class="flex items-center justify-center gap-4 pt-2">
+        <button class="home-small-link" onclick="switchTab('tasks')">View all →</button>
+        <button class="home-small-link" onclick="openSchedulePanel('timeline')">Timeblock →</button>
+      </div>`;
+    if(window.lucide)lucide.createIcons();
+  }
+  window.renderHomeUnifiedTasksFinal=renderHomeTasksFinal;
+
+  /* Re-render immediately after task changes and continuously as the real clock moves. */
+  const oldToggleF=window.toggleTaskDone;
+  window.toggleTaskDone=function(id){
+    if(typeof oldToggleF==='function')oldToggleF(id);
+    setTimeout(()=>{renderHomeTasksFinal();},0);
+  };
+  const oldOpenAddF=window.openAddTaskModal;
+  window.openAddTaskModal=function(){
+    if(typeof currentTab==='undefined'||currentTab==='home'){
+      if(typeof selectedCalendarDate!=='undefined')selectedCalendarDate=todayF();
+    }
+    if(typeof oldOpenAddF==='function')oldOpenAddF();
+    const d=document.getElementById('taskInputDate');
+    if(d&&(typeof currentTab==='undefined'||currentTab==='home'))d.value=todayF();
+  };
+
+  /* ============================================================
+     TASK CALENDAR: arrows move week; Expand opens month
+     ============================================================ */
+  let weekModeExpanded=!!window.__trackabilityTaskCalendarExpanded;
+  let weekCursor=new Date((typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:todayF())+'T00:00:00');
+  function startWeekF(d){
+    const x=new Date(d);const day=x.getDay();const diff=day===0?-6:1-day;x.setDate(x.getDate()+diff);x.setHours(0,0,0,0);return x;
+  }
+  function taskCalendarDayF(x){
+    return ymdF(x);
+  }
+  function renderTaskCalendarFinal(){
+    const grid=document.getElementById('taskEnlargedMonthGrid');
+    const label=document.getElementById('taskMonthLabel');
+    if(!grid||!label)return;
+    const selected=new Date((typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:todayF())+'T00:00:00');
+    if(!weekCursor||isNaN(weekCursor.getTime()))weekCursor=new Date(selected);
+    if(!weekModeExpanded){
+      const ws=startWeekF(weekCursor),dates=Array.from({length:7},(_,i)=>{const x=new Date(ws);x.setDate(ws.getDate()+i);return x;});
+      const end=dates[6];
+      const sameMonth=ws.getMonth()===end.getMonth();
+      label.textContent=sameMonth
+        ? ws.toLocaleDateString('en-US',{month:'long',year:'numeric'})
+        : `${ws.toLocaleDateString('en-US',{month:'short',year:'numeric'})} – ${end.toLocaleDateString('en-US',{month:'short',year:'numeric'})}`;
+      grid.innerHTML='';
+      dates.forEach(x=>{
+        const date=taskCalendarDayF(x),tasks=(appState.tasks||[]).filter(t=>t.date===date),sel=date===(typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:todayF()),today=date===todayF(),done=tasks.length>0&&tasks.every(t=>t.completed);
+        const cls=sel?'bg-themeAccent text-white':today?'border border-themeAccent text-themeAccent bg-themeCardSoft':'bg-themeCardSoft text-themeText';
+        grid.innerHTML+=`<button onclick="selectedCalendarDate='${date}';weekCursor=new Date('${date}T00:00:00');renderTasksTab()" class="h-12 rounded-xl ${cls} flex flex-col items-center justify-center transition"><span class="text-[9px] font-black">${x.getDate()}</span><span class="text-[8px]">${tasks.length?tasks.length+' task'+(tasks.length>1?'s':''):''}</span>${done?'<span class="text-[8px] text-emerald-400">✓</span>':''}</button>`;
+      });
+    }else{
+      const y=selected.getFullYear(),m=selected.getMonth(),days=new Date(y,m+1,0).getDate(),first=(new Date(y,m,1).getDay()+6)%7;
+      label.textContent=selected.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      grid.innerHTML='';
+      for(let i=0;i<first;i++)grid.innerHTML+='<span></span>';
+      for(let d=1;d<=days;d++){
+        const date=`${y}-${padF(m+1)}-${padF(d)}`,tasks=(appState.tasks||[]).filter(t=>t.date===date),sel=date===(typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:todayF()),today=date===todayF(),done=tasks.length>0&&tasks.every(t=>t.completed);
+        const cls=sel?'bg-themeAccent text-white':today?'border border-themeAccent text-themeAccent bg-themeCardSoft':'bg-themeCardSoft text-themeText';
+        grid.innerHTML+=`<button onclick="selectedCalendarDate='${date}';weekCursor=new Date('${date}T00:00:00');renderTasksTab()" class="h-9 rounded-xl ${cls} flex flex-col items-center justify-center transition"><span class="text-[9px] font-black">${d}</span><span class="text-[8px]">${tasks.length?tasks.length:''}</span>${done?'<span class="text-[8px] text-emerald-400">✓</span>':''}</button>`;
+      }
+    }
+    let toggle=document.getElementById('taskWeekExpandBtn');
+    if(!toggle){
+      const holder=grid.parentElement,top=holder?.querySelector('.flex.justify-between.items-center');
+      if(top){toggle=document.createElement('button');toggle.id='taskWeekExpandBtn';top.appendChild(toggle);}
+    }
+    if(toggle){
+      toggle.innerHTML=weekModeExpanded?'<i data-lucide="calendar-days" class="w-3 h-3"></i><span>Week</span>':'<i data-lucide="maximize-2" class="w-3 h-3"></i><span>Expand</span>';
+      toggle.className='px-2 py-1 rounded-lg bg-themeCardSoft border border-themeBorder text-[9px] font-black text-themeAccent inline-flex items-center gap-1';
+      toggle.title=weekModeExpanded?'Return to week view':'Expand to monthly calendar';
+      toggle.onclick=()=>{weekModeExpanded=!weekModeExpanded;window.__trackabilityTaskCalendarExpanded=weekModeExpanded;renderTaskCalendarFinal();};
+    }
+    if(window.lucide)lucide.createIcons();
+  }
+  window.renderTaskMonthCalendar=renderTaskCalendarFinal;
+  window.shiftTaskMonth=function(delta){
+    const base=new Date((typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:todayF())+'T00:00:00');
+    if(weekModeExpanded){base.setMonth(base.getMonth()+Number(delta||0));}
+    else{base.setDate(base.getDate()+7*Number(delta||0));}
+    if(typeof selectedCalendarDate!=='undefined')selectedCalendarDate=ymdF(base);
+    weekCursor=new Date(base);
+    if(typeof renderTasksTab==='function')renderTasksTab();else renderTaskCalendarFinal();
+  };
+  window.jumpToTaskTodayMonth=function(){
+    if(typeof selectedCalendarDate!=='undefined')selectedCalendarDate=todayF();
+    weekCursor=new Date();
+    if(typeof renderTasksTab==='function')renderTasksTab();else renderTaskCalendarFinal();
+  };
+
+  /* ============================================================
+     SEARCH: live, prefix-friendly and navigates to actual content
+     ============================================================ */
+  window.runGlobalSearch=function(raw){
+    const q=String(raw||'').trim().toLowerCase();
+    const c=document.getElementById('globalSearchResults');
+    if(!c)return;
+    if(!q){c.innerHTML='';return;}
+    const results=[];
+    const push=(type,title,sub,action)=>results.push({type,title,sub,action});
+    const matches=(text)=>{
+      text=String(text||'').toLowerCase();
+      if(!text)return false;
+      /* Single-letter search is intentionally prefix based; 2+ chars are substring based. */
+      return q.length===1?text.startsWith(q):text.includes(q);
+    };
+    (appState.subjects||[]).forEach(s=>{
+      if(matches(s.name))push('Subject',s.name,`${(s.chapters||[]).length} chapters`,()=>{selectedSubjectId=s.id;switchTab('syllabus');renderSyllabus();closeModal('searchModal');});
+      (s.chapters||[]).forEach(ch=>{
+        if(matches(ch.name))push('Chapter',ch.name,s.name,()=>{
+          selectedSubjectId=s.id;switchTab('syllabus');renderSyllabus();closeModal('searchModal');
+          setTimeout(()=>{
+            const heads=[...document.querySelectorAll('#syllabusChaptersList h5')];
+            const h=heads.find(el=>el.textContent.trim()===ch.name);
+            h?.closest('.p-3')?.scrollIntoView({behavior:'smooth',block:'center'});
+          },120);
+        });
+      });
+    });
+    (appState.tasks||[]).forEach(t=>{if(matches(t.name))push('Task',t.name,t.date||'No date',()=>{selectedCalendarDate=t.date||todayF();switchTab('tasks');closeModal('searchModal');setTimeout(()=>renderTasksTab(),80);});});
+    (appState.mistakes||[]).forEach(m=>{if(matches(m.topic)||matches(m.notes))push('Mistake',m.topic,m.status||'Unresolved',()=>{switchTab('tracker');switchTrackerModule('mistakes');closeModal('searchModal');});});
+    (appState.grandTests||[]).forEach(g=>{if(matches(g.name))push('Grand Test',g.name,`${g.date||''} • ${g.score||0} marks`,()=>{switchTab('tracker');switchTrackerModule('gt');closeModal('searchModal');});});
+    (appState.revisionItems||[]).forEach(r=>{if(matches(r.topic))push('Revision',r.topic,`+${intervals[Math.min(Number(r.stage)||0,intervals.length-1)]} stage`,()=>{switchTab('syllabus');switchSyllabusSubTab('revision');closeModal('searchModal');});});
+    (appState.mcqIds||[]).forEach(m=>{if(matches(m.qid)||matches(m.topic))push('MCQ ID',m.qid||m.topic||'',`${m.topic||''} • ${m.date||''}`,()=>{switchTab('tracker');switchTrackerModule('mcqid');closeModal('searchModal');});});
+    (appState.mcqActivities||[]).forEach(m=>{if(matches(m.name)||matches(m.topic))push('MCQ',m.name||m.topic||'MCQ',`${m.questions||0} questions`,()=>{switchTab('syllabus');switchSyllabusSubTab('mcq');closeModal('searchModal');});});
+    c.innerHTML=results.slice(0,40).map((r,i)=>`<button data-search-index="${i}" class="w-full text-left p-3 rounded-2xl bg-themeCardSoft border border-themeBorder hover:border-themeAccent transition"><div class="flex justify-between gap-2"><span class="text-[8px] font-black uppercase text-themeAccent">${escF(r.type)}</span><span class="text-[8px] text-themeMuted">Open →</span></div><b class="block text-xs text-themeText mt-1">${escF(r.title)}</b><span class="block text-[9px] text-themeMuted mt-0.5">${escF(r.sub)}</span></button>`).join('')||'<p class="text-themeMuted text-center py-6">No matching records found.</p>';
+    [...c.querySelectorAll('[data-search-index]')].forEach((b,i)=>b.onclick=results[i].action);
+  };
+
+  function finalUserFixInit(){
+    try{
+      renderTaskCalendarFinal();
+      renderHomeTasksFinal();
+      if(document.getElementById('globalSearchInput'))document.getElementById('globalSearchInput').value='';
+      if(window.lucide)lucide.createIcons();
+    }catch(e){console.error('TRACKEBILITY user fixes',e);}
+  }
+  document.addEventListener('DOMContentLoaded',finalUserFixInit);
+  setInterval(()=>{
+    try{
+      if(typeof currentTab!=='undefined'&&currentTab==='home')renderHomeTasksFinal();
+    }catch(e){}
+  },1000);
+})();
+</script>
