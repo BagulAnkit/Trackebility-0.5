@@ -537,13 +537,8 @@
         </div>
 
         <div class="space-y-2">
-          <h4 class="text-xs font-black uppercase tracking-wider text-amber-400 px-1">Due For Review</h4>
+          <h4 class="text-xs font-black uppercase tracking-wider text-amber-400 px-1">Spaced Revision Stages</h4>
           <div id="revisionQueueContainer" class="space-y-2"></div>
-        </div>
-
-        <div class="space-y-2 pt-2 border-t border-themeBorder">
-          <h4 class="text-xs font-black uppercase tracking-wider text-emerald-400 px-1">Completed History (With Undo)</h4>
-          <div id="revisionHistoryLogContainer" class="space-y-2"></div>
         </div>
       </div>
     </section>
@@ -2061,10 +2056,10 @@
     }
 
     function completeTaskWithTracker(t) {
+      const date = t.date || getLocalYMD();
       if (t.trackerLogged) {
         t.completed = true; saveState(); refreshAllViews(); checkHomeAchievements(date); showToast('✓ Task completed'); return;
       }
-      const date = t.date || getLocalYMD();
       if (t.trackerType === 'gym') {
         pendingGymTaskId = t.id;
         document.getElementById('gymModalHeading').textContent = 'Complete Gym Task';
@@ -4091,5 +4086,481 @@
 })();
 </script>
 
-</body>
+\n\n<style id="trackability-final-repair-styles">
+  /* Final UI repair: compact layout, readable wrapping, no duplicate tracker calendar. */
+  #trackerMiniCalendarWrap { display:none !important; }
+  #revisionHistoryLogContainer, #revisionHistoryLogContainer + * { display:none !important; }
+  #sylSub-revision > .space-y-2.pt-2 { display:none !important; }
+  #sylSub-revision > div:first-child button { display:none !important; }
+  .tb-wrap { min-width:0; overflow-wrap:anywhere; word-break:break-word; white-space:normal; }
+  .tb-task-name { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; overflow-wrap:anywhere; word-break:break-word; line-height:1.35; }
+  .tb-next-line { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; overflow-wrap:anywhere; line-height:1.35; }
+  .tb-task-card { align-items:flex-start !important; }
+  .tb-task-card .tb-task-main { min-width:0; flex:1 1 auto; }
+  .tb-task-card .tb-task-actions { flex:0 0 auto; }
+  #sylSub-mcq .tb-mcq-card, #sylSub-revision .tb-revision-card { overflow-wrap:anywhere; word-break:break-word; }
+  #sylSub-mcq .tb-mcq-card > *, #sylSub-revision .tb-revision-card > * { min-width:0; }
+  #homeEnlargedTasksList { overflow-x:hidden; }
+  #homeEnlargedTasksList .tb-task-card { margin-bottom:0; }
+  .tb-stage-pill { min-width:42px; text-align:center; }
+  .tb-empty { padding:1.25rem .75rem; text-align:center; }
+</style>
+
+<script id="trackability-final-repair">
+(function(){
+  'use strict';
+
+  const esc = window.escapeHtml || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const pad=n=>String(n).padStart(2,'0');
+  const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const addDays=(date,n)=>{const d=new Date((date||getLocalYMD())+'T00:00:00');d.setDate(d.getDate()+Number(n||0));return ymd(d);};
+  const getSub=id=>(appState.subjects||[]).find(s=>s.id===id);
+  const intervals=[1,3,7,14,30];
+
+  /* ============================================================
+     1) TRACKER: permanently remove the duplicate mini calendar.
+     The main Tracking Calendar remains untouched.
+     ============================================================ */
+  window.renderTrackerMiniCalendar=function(){
+    const wrap=document.getElementById('trackerMiniCalendarWrap');
+    if(wrap) wrap.remove();
+  };
+  function removeDuplicateTrackerCalendar(){
+    const wrap=document.getElementById('trackerMiniCalendarWrap');
+    if(wrap) wrap.remove();
+  }
+
+  /* ============================================================
+     2) SYLLABUS: MCQ Hub button + central MCQ chapter list.
+     ============================================================ */
+  function installMcqHub(){
+    const syllabus=document.getElementById('sylSub-syllabus');
+    if(!syllabus)return;
+    const summary=syllabus.firstElementChild;
+    if(summary && !document.getElementById('syllabusMcqHubBtn')){
+      const btn=document.createElement('button');
+      btn.id='syllabusMcqHubBtn';
+      btn.type='button';
+      btn.onclick=()=>switchSyllabusSubTab('mcq');
+      btn.className='px-3 py-2 rounded-xl bg-themeCardSoft border border-themeBorder text-themeAccent text-[10px] font-black whitespace-nowrap active:scale-95 transition';
+      btn.innerHTML='<i data-lucide="brain" class="w-3.5 h-3.5 inline-block align-[-2px] mr-1"></i> MCQ Hub';
+      const addBtn=[...summary.querySelectorAll('button')].find(b=>/openAddSubjectModal/.test(b.getAttribute('onclick')||''));
+      if(addBtn) summary.insertBefore(btn,addBtn); else summary.appendChild(btn);
+    }
+
+    if(!document.getElementById('sylSub-mcq')){
+      const mcq=document.createElement('div');
+      mcq.id='sylSub-mcq';
+      mcq.className='hidden space-y-4';
+      mcq.innerHTML=`
+        <div class="rounded-3xl p-4 bg-themeCard border border-themeBorder">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h3 class="text-sm font-black text-themeText">MCQ Hub</h3>
+              <p class="text-[10px] text-themeMuted mt-1">Chapters marked MCQ appear here. Add any chapter to your task schedule.</p>
+            </div>
+            <span id="mcqHubCount" class="shrink-0 px-2 py-1 rounded-lg bg-themeCardSoft text-[9px] font-black text-themeAccent">0 chapters</span>
+          </div>
+        </div>
+        <div id="mcqHubList" class="space-y-2"></div>`;
+      syllabus.parentElement.insertBefore(mcq, document.getElementById('sylSub-revision'));
+    }
+
+    if(window.lucide)lucide.createIcons();
+  }
+
+  window.renderMcqHub=function(){
+    installMcqHub();
+    const list=document.getElementById('mcqHubList'),count=document.getElementById('mcqHubCount');
+    if(!list)return;
+    const rows=[];
+    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{
+      if(ch.status==='MCQ') rows.push({s,ch});
+    }));
+    if(count) count.textContent=`${rows.length} chapter${rows.length===1?'':'s'}`;
+    if(!rows.length){
+      list.innerHTML='<div class="tb-empty rounded-3xl bg-themeCard border border-themeBorder text-themeMuted"><div class="text-2xl mb-2">🧠</div><p class="text-xs font-bold">No chapters marked for MCQ yet.</p><p class="text-[10px] mt-1">Go to Syllabus, choose a chapter, then tap MCQ.</p></div>';
+      return;
+    }
+    list.innerHTML=rows.map(({s,ch})=>{
+      const pending=(appState.tasks||[]).filter(t=>!t.completed&&t.subjectId===s.id&&t.chapterId===ch.id&&t.trackerType==='mcq').length;
+      return `<div class="tb-mcq-card rounded-2xl p-3 bg-themeCard border border-themeBorder flex items-start gap-3">
+        <span class="shrink-0 mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center text-[9px] font-black bg-themeCardSoft" style="color:${s.color||'var(--themeAccent)'}">${esc(s.symbol||s.name.slice(0,2).toUpperCase())}</span>
+        <div class="tb-wrap flex-1 min-w-0">
+          <div class="text-[9px] font-black uppercase text-themeMuted">${esc(s.name)}</div>
+          <div class="text-xs font-black text-themeText mt-0.5 tb-wrap">${esc(ch.name)}</div>
+          ${pending?`<div class="text-[9px] text-amber-400 mt-1">${pending} pending MCQ task${pending===1?'':'s'}</div>`:''}
+        </div>
+        <button onclick="openMcqChapterTask('${esc(s.id)}','${esc(ch.id)}')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-themeAccent text-white text-[9px] font-black active:scale-95 transition">+ Add to Task</button>
+      </div>`;
+    }).join('');
+    if(window.lucide)lucide.createIcons();
+  };
+
+  window.openMcqChapterTask=function(subId,chId){
+    const s=getSub(subId),ch=s?.chapters?.find(x=>x.id===chId);
+    if(!s||!ch)return;
+    selectedCalendarDate=getLocalYMD();
+    openAddTaskModal();
+    const name=document.getElementById('taskInputName'),type=document.getElementById('taskInputType'),sub=document.getElementById('taskInputSubject'),chapter=document.getElementById('taskInputChapter');
+    if(name)name.value=`MCQ: ${ch.name}`;
+    if(type)type.value='mcq';
+    if(sub){sub.value=subId; if(typeof populateTaskChapters==='function')populateTaskChapters();}
+    if(chapter)chapter.value=chId;
+  };
+
+  /* ============================================================
+     3) SYLLABUS: chapter status. R starts/keeps spaced revision.
+     ============================================================ */
+  function ensureRevisionStoreFinal(){
+    appState.revisionItems=Array.isArray(appState.revisionItems)?appState.revisionItems:[];
+    appState.revisionUndoStack=appState.revisionUndoStack||{};
+    appState.tasks=Array.isArray(appState.tasks)?appState.tasks:[];
+
+    // Migrate chapter markers and normalize to the five requested stages.
+    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{
+      if(ch.status==='R' || ch.nextRevisionDate){
+        let r=appState.revisionItems.find(x=>x.chapterId===ch.id);
+        if(!r){
+          let stage=Math.max(0,Math.min(intervals.length-1,Number(ch.revStage)||0));
+          r={id:'rev_'+ch.id,subjectId:s.id,chapterId:ch.id,topic:ch.name,stage,nextDate:ch.nextRevisionDate||addDays(getLocalYMD(),intervals[stage]),time:'09:00',duration:30};
+          appState.revisionItems.push(r);
+        }else{
+          r.subjectId=s.id;r.chapterId=ch.id;r.topic=ch.name;r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
+          if(!r.nextDate)r.nextDate=ch.nextRevisionDate||addDays(getLocalYMD(),intervals[r.stage]);
+        }
+        ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;
+      }
+    }));
+    // Clean stale revision records whose chapter no longer exists.
+    appState.revisionItems=appState.revisionItems.filter(r=>{const s=getSub(r.subjectId);return !!s?.chapters?.some(c=>c.id===r.chapterId);});
+  }
+
+  function getRevisionTask(r){
+    return (appState.tasks||[]).find(t=>t.revisionId===r.id&&!t.completed);
+  }
+
+  function ensureRevisionTaskFinal(r){
+    if(!r||!r.nextDate)return;
+    appState.tasks=appState.tasks||[];
+    const today=getLocalYMD();
+    let active=getRevisionTask(r);
+
+    // If the revision was missed, carry the same revision forward to today.
+    // Do not create a pile of duplicate daily tasks.
+    if(active && active.date < today){
+      active.date=today;
+      active.startTime=r.time||active.startTime||null;
+      active.endTime=active.startTime&&r.duration?formatTimeEndFinal(active.startTime,r.duration):active.endTime||null;
+    }
+    if(active && active.date!==r.nextDate && r.nextDate>today){
+      active.date=r.nextDate;
+    }
+
+    // Remove duplicate unfinished revision tasks for the same revision.
+    const unfinished=(appState.tasks||[]).filter(t=>t.revisionId===r.id&&!t.completed);
+    if(unfinished.length>1){
+      const keep=unfinished.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))[0];
+      appState.tasks=(appState.tasks||[]).filter(t=>t.revisionId!==r.id||t.completed||t.id===keep.id);
+      active=keep;
+    }
+
+    if(!active){
+      const date=r.nextDate<=today?today:r.nextDate;
+      active={
+        id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+        name:`Revision: ${r.topic}`,date,startTime:r.time||null,
+        endTime:r.time?formatTimeEndFinal(r.time,r.duration||30):null,
+        duration:Number(r.duration)||30,completed:false,reminderEnabled:false,
+        reminderPreset:'',subjectId:r.subjectId||'',chapterId:r.chapterId||'',
+        color:'#f59e0b',trackerType:'revision',trackerLogged:false,revisionId:r.id
+      };
+      appState.tasks.push(active);
+    }else{
+      active.name=`Revision: ${r.topic}`;active.subjectId=r.subjectId||'';active.chapterId=r.chapterId||'';
+      active.trackerType='revision';active.revisionId=r.id;active.color=active.color||'#f59e0b';
+      active.duration=Number(r.duration)||Number(active.duration)||30;
+    }
+    return active;
+  }
+
+  function formatTimeEndFinal(start,duration){
+    if(!start)return null;
+    const [h,m]=start.split(':').map(Number);const total=h*60+m+Number(duration||30);
+    return `${pad(Math.floor((total%1440)/60))}:${pad(total%60)}`;
+  }
+
+  function syncChapterRevision(r){
+    const s=getSub(r.subjectId),ch=s?.chapters?.find(c=>c.id===r.chapterId);
+    if(ch){ch.status='R';ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
+  }
+
+  window.setChapterStatus=function(subId,chId,status){
+    const s=getSub(subId),ch=s?.chapters?.find(c=>c.id===chId);
+    if(!ch)return;
+    ensureRevisionStoreFinal();
+    ch.status=status;
+    if(status==='R'){
+      let r=appState.revisionItems.find(x=>x.chapterId===chId);
+      if(!r){
+        r={id:'rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),subjectId:subId,chapterId:chId,topic:ch.name,stage:0,nextDate:addDays(getLocalYMD(),1),time:'09:00',duration:30};
+        appState.revisionItems.push(r);
+      }else{
+        r.subjectId=subId;r.topic=ch.name;r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
+        if(!r.nextDate||r.nextDate<getLocalYMD())r.nextDate=addDays(getLocalYMD(),intervals[r.stage]);
+      }
+      ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;
+      ensureRevisionTaskFinal(r);
+      saveState();renderSyllabus();renderRevisionTab();renderHome();renderTasksTab();
+      showToast(`🔁 ${ch.name} added to +${intervals[r.stage]} revision`);
+      return;
+    }
+    // Other syllabus statuses do not destroy an existing revision cycle.
+    saveState();renderSyllabus();renderMcqHub();renderRevisionTab();
+  };
+
+  /* ============================================================
+     4) REVISION HUB: only current stages, Edit + Undo. No history.
+     ============================================================ */
+  window.renderRevisionTab=function(){
+    ensureRevisionStoreFinal();
+    const q=document.getElementById('revisionQueueContainer');
+    if(!q)return;
+    const today=getLocalYMD();
+    appState.revisionItems.forEach(r=>{
+      r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
+      const ch=getSub(r.subjectId)?.chapters?.find(c=>c.id===r.chapterId);
+      if(ch){r.topic=ch.name;ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
+      ensureRevisionTaskFinal(r);
+    });
+    const active=appState.revisionItems.slice().sort((a,b)=>{
+      const sa=Number(a.stage)||0,sb=Number(b.stage)||0;return sa-sb || (a.nextDate||'').localeCompare(b.nextDate||'') || (a.topic||'').localeCompare(b.topic||'');
+    });
+    if(!active.length){
+      q.innerHTML='<div class="tb-empty rounded-3xl bg-themeCard border border-themeBorder text-themeMuted"><div class="text-2xl mb-2">🔁</div><p class="text-xs font-bold">No chapters in the Revision Hub.</p><p class="text-[10px] mt-1">Tap R on a chapter to start its spaced-revision cycle.</p></div>';
+    }else{
+      q.innerHTML=intervals.map((days,i)=>{
+        const arr=active.filter(r=>Number(r.stage)===i);
+        return `<div class="rounded-2xl bg-themeCardSoft/50 border border-themeBorder p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2"><b class="text-[10px] uppercase text-themeAccent">+${days} Day</b><span class="text-[9px] text-themeMuted">${arr.length} chapter${arr.length===1?'':'s'}</span></div></div>
+          ${arr.length?arr.map(r=>{
+            const s=getSub(r.subjectId),due=(r.nextDate||'')<=today,task=getRevisionTask(r);
+            const dueText=due?'Due now':`Next: ${r.nextDate}`;
+            const canUndo=!!appState.revisionUndoStack[r.id];
+            return `<div class="tb-revision-card rounded-xl p-3 bg-themeCard border ${due?'border-themeAccent':'border-themeBorder'}">
+              <div class="flex items-start justify-between gap-3">
+                <div class="tb-wrap min-w-0 flex-1">
+                  <div class="text-[8px] font-black uppercase text-themeMuted">${esc(s?.name||'General')}</div>
+                  <div class="text-xs font-black text-themeText mt-0.5 tb-wrap">${esc(r.topic)}</div>
+                  <div class="text-[9px] mt-1 ${due?'text-themeAccent font-bold':'text-themeMuted'}">${dueText}${task&&task.date===today?' • Task on Today':''}</div>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                  <button onclick="editRevision('${esc(r.id)}')" class="px-2 py-1.5 rounded-lg bg-themeCardSoft text-themeAccent text-[9px] font-black">Edit</button>
+                  ${canUndo?`<button onclick="undoRevision('${esc(r.id)}')" class="px-2 py-1.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/20 text-[9px] font-black">Undo</button>`:''}
+                </div>
+              </div>
+            </div>`;
+          }).join(''):'<div class="text-[9px] text-themeMuted py-1">Nothing here.</div>'}
+        </div>`;
+      }).join('');
+    }
+    const h=document.getElementById('revisionHistoryLogContainer');if(h)h.innerHTML='';
+    const histSection=h?.closest('.space-y-2.pt-2');if(histSection)histSection.style.display='none';
+    saveState();if(window.lucide)lucide.createIcons();
+  };
+
+  window.advanceSpacedRevision=function(revisionId,taskId=null){
+    ensureRevisionStoreFinal();
+    const r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;
+    const today=getLocalYMD();
+    const fromStage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
+    const fromDate=r.nextDate||today;
+    const oldTask=taskId?(appState.tasks||[]).find(t=>t.id===taskId):(getRevisionTask(r));
+    // Save exactly one reversible transition; it is not displayed as history.
+    appState.revisionUndoStack[r.id]={fromStage,fromDate,taskId:oldTask?.id||null,oldTaskDate:oldTask?.date||null,oldTaskCompleted:oldTask?.completed||false};
+    if(oldTask)oldTask.completed=true;
+
+    const toStage=fromStage<intervals.length-1?fromStage+1:fromStage;
+    r.stage=toStage;
+    r.nextDate=addDays(today,intervals[toStage]);
+    syncChapterRevision(r);
+    ensureRevisionTaskFinal(r);
+    saveState();refreshAllViews();renderRevisionTab();renderMcqHub();
+    showToast(`✓ Revision completed → +${intervals[toStage]} day task scheduled`);
+  };
+
+  window.undoRevision=function(revisionId){
+    ensureRevisionStoreFinal();
+    const r=appState.revisionItems.find(x=>x.id===revisionId),u=appState.revisionUndoStack[r?.id];
+    if(!r||!u)return;
+    // Remove the current future revision task, then restore the previous task.
+    appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId===r.id&&!t.completed));
+    r.stage=Math.max(0,Math.min(intervals.length-1,Number(u.fromStage)||0));
+    r.nextDate=u.fromDate||addDays(getLocalYMD(),intervals[r.stage]);
+    const oldTask=u.taskId?(appState.tasks||[]).find(t=>t.id===u.taskId):null;
+    if(oldTask){oldTask.completed=!!u.oldTaskCompleted;oldTask.date=u.oldTaskDate||r.nextDate;}
+    delete appState.revisionUndoStack[r.id];
+    syncChapterRevision(r);ensureRevisionTaskFinal(r);saveState();refreshAllViews();renderRevisionTab();
+    showToast(`↩ Revision returned to +${intervals[r.stage]} day stage`);
+  };
+
+  /* Completing a revision task advances the revision; unchecking it performs Undo. */
+  const originalToggleTaskDone=window.toggleTaskDone;
+  window.toggleTaskDone=function(id){
+    const t=(appState.tasks||[]).find(x=>x.id===id);
+    if(t?.revisionId){
+      if(t.completed) undoRevision(t.revisionId);
+      else advanceSpacedRevision(t.revisionId,t.id);
+      return;
+    }
+    if(typeof originalToggleTaskDone==='function')return originalToggleTaskDone(id);
+  };
+
+  /* Revision edit modal keeps the stage; only schedule fields change. */
+  const originalSaveScheduledRevision=window.saveScheduledRevision;
+  window.saveScheduledRevision=function(){
+    if(typeof originalSaveScheduledRevision==='function'){
+      originalSaveScheduledRevision();
+      ensureRevisionStoreFinal();
+      appState.revisionItems.forEach(r=>{r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));syncChapterRevision(r);ensureRevisionTaskFinal(r);});
+      saveState();renderRevisionTab();renderHome();renderTasksTab();
+    }
+  };
+
+  /* ============================================================
+     5) HOME TASKS: reliable Next Up, completion, add-task date, wrapping.
+     ============================================================ */
+  function homeNextTask(tasks){
+    const now=new Date(),nowM=now.getHours()*60+now.getMinutes();
+    const toM=t=>t&&/^\\d{2}:\\d{2}$/.test(t)?Number(t.slice(0,2))*60+Number(t.slice(3,5)):null;
+    const pending=tasks.filter(t=>!t.completed);
+    const active=pending.find(t=>{const s=toM(t.startTime),e=toM(t.endTime);return s!==null&&e!==null&&s<=nowM&&e>nowM;});
+    if(active)return active;
+    const upcoming=pending.filter(t=>toM(t.startTime)!==null&&toM(t.startTime)>=nowM).sort((a,b)=>toM(a.startTime)-toM(b.startTime));
+    if(upcoming[0])return upcoming[0];
+    const allDay=pending.filter(t=>toM(t.startTime)===null);
+    if(allDay[0])return allDay[0];
+    return pending[0]||null;
+  }
+
+  window.renderHomeEnlargedTasksList=function(todayTasks,completedToday){
+    const container=document.getElementById('homeEnlargedTasksList');
+    const badge=document.getElementById('homeTodayTasksCountBadge');
+    const nextLine=document.getElementById('homeNextUpLine');
+    if(!container)return;
+    const tasks=[...(todayTasks||[])].sort((a,b)=>{
+      const at=a.startTime||'99:99',bt=b.startTime||'99:99';return at.localeCompare(bt)||(a.name||'').localeCompare(b.name||'');
+    });
+    const done=tasks.filter(t=>t.completed).length;
+    if(badge)badge.textContent=`${done}/${tasks.length} done`;
+    const next=homeNextTask(tasks);
+    if(nextLine){
+      nextLine.className='tb-next-line text-[9px] font-bold text-themeAccent mt-1';
+      if(next){
+        const time=next.startTime?formatTime12h(next.startTime):'All Day';
+        nextLine.textContent=`Next Up: ${next.name} • ${time}`;
+      }else if(tasks.length&&done===tasks.length){
+        nextLine.textContent='Next Up: All tasks completed 🎉';
+      }else{
+        nextLine.textContent='Next Up: —';
+      }
+    }
+    if(!tasks.length){
+      container.innerHTML='<div class="tb-empty text-themeMuted"><p class="text-xs font-bold">No tasks scheduled for today.</p><button onclick="openAddTaskModal()" class="mt-2 px-3 py-1.5 rounded-xl bg-themeAccent text-white text-[9px] font-black">+ Add Task</button></div>';
+      return;
+    }
+    const preview=tasks.slice(0,4);
+    container.innerHTML=preview.map(t=>{
+      const sub=getSub(t.subjectId),isNext=next?.id===t.id;
+      const time=t.startTime?`${formatTime12h(t.startTime)}${t.endTime?' - '+formatTime12h(t.endTime):''}`:'All Day';
+      return `<div class="tb-task-card p-3 rounded-2xl border transition flex gap-2.5 ${isNext&&!t.completed?'ring-2 ring-themeAccent/40 bg-themeAccent/10 border-themeAccent':'bg-themeCardSoft border-themeBorder'} ${t.completed?'opacity-70':''}" style="${t.color&&!t.completed&&!isNext?getTaskColorStyle(t):''}">
+        <button onclick="toggleTaskDone('${esc(t.id)}')" class="w-5 h-5 mt-0.5 rounded-lg border flex items-center justify-center shrink-0 ${t.completed?'bg-emerald-500 border-emerald-500 text-white':'border-themeMuted'}">${t.completed?'<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>':''}</button>
+        <div onclick="openTaskActions('${esc(t.id)}')" class="tb-task-main cursor-pointer">
+          <div class="flex items-start gap-1.5 flex-wrap"><span class="tb-task-name text-xs font-bold ${t.completed?'line-through text-themeMuted':'text-themeText'}">${esc(t.name)}</span>${isNext&&!t.completed?'<span class="shrink-0 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-themeAccent text-white">NEXT</span>':''}</div>
+          <div class="flex items-center gap-2 flex-wrap text-[10px] text-themeMuted mt-1"><span>⏱ ${time}</span>${sub?`<span class="font-bold" style="color:${sub.color}">[${esc(sub.symbol||sub.name.slice(0,2).toUpperCase())}]</span>`:''}</div>
+        </div>
+        <button onclick="openTaskActions('${esc(t.id)}')" class="tb-task-actions text-themeMuted hover:text-themeText p-1 shrink-0"><i data-lucide="more-vertical" class="w-3.5 h-3.5"></i></button>
+      </div>`;
+    }).join('');
+    if(tasks.length>4){
+      container.innerHTML+=`<button onclick="switchTab('tasks')" class="w-full py-2 text-[10px] font-black text-themeAccent">View all ${tasks.length} tasks →</button>`;
+    }
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* Home Add Task must default to TODAY, not a stale date selected elsewhere. */
+  const originalOpenAddTaskModal=window.openAddTaskModal;
+  window.openAddTaskModal=function(){
+    if(currentTab==='home')selectedCalendarDate=getLocalYMD();
+    if(typeof originalOpenAddTaskModal==='function')originalOpenAddTaskModal();
+    const date=document.getElementById('taskInputDate');
+    if(currentTab==='home'&&date)date.value=getLocalYMD();
+  };
+
+  /* Reschedule buttons keep selected date synchronized with the Tasks screen. */
+  const originalShiftActiveTask=window.shiftActiveTask;
+  window.shiftActiveTask=function(days){
+    if(typeof originalShiftActiveTask==='function')originalShiftActiveTask(days);
+    const t=(appState.tasks||[]).find(x=>x.id===activeTaskIdForAction);
+    if(t)selectedCalendarDate=t.date;
+  };
+  const originalShiftActiveTaskPrompt=window.shiftActiveTaskPrompt;
+  window.shiftActiveTaskPrompt=function(){
+    if(typeof originalShiftActiveTaskPrompt==='function')originalShiftActiveTaskPrompt();
+    const t=(appState.tasks||[]).find(x=>x.id===activeTaskIdForAction);
+    if(t)selectedCalendarDate=t.date;
+  };
+
+  /* ============================================================
+     6) Syllabus tab switching + clean initialization.
+     ============================================================ */
+  window.switchSyllabusSubTab=function(sub){
+    installMcqHub();
+    const map={syllabus:'sylSub-syllabus',revision:'sylSub-revision',mcq:'sylSub-mcq'};
+    Object.keys(map).forEach(k=>document.getElementById(map[k])?.classList.toggle('hidden',k!==sub));
+    const syllabusBtn=document.getElementById('sylSubBtn-syllabus'),revBtn=document.getElementById('sylSubBtn-revision');
+    if(syllabusBtn)syllabusBtn.className=sub==='syllabus'?'flex-1 py-1.5 text-xs font-bold rounded-xl bg-themeCard text-themeAccent shadow':'flex-1 py-1.5 text-xs font-bold rounded-xl text-themeMuted';
+    if(revBtn)revBtn.className=sub==='revision'?'flex-1 py-1.5 text-xs font-bold rounded-xl bg-themeCard text-themeAccent shadow':'flex-1 py-1.5 text-xs font-bold rounded-xl text-themeMuted';
+    const mcqBtn=document.getElementById('syllabusMcqHubBtn');
+    if(mcqBtn){mcqBtn.className=sub==='mcq'?'px-3 py-2 rounded-xl bg-themeAccent text-white text-[10px] font-black whitespace-nowrap active:scale-95 transition':'px-3 py-2 rounded-xl bg-themeCardSoft border border-themeBorder text-themeAccent text-[10px] font-black whitespace-nowrap active:scale-95 transition';}
+    if(sub==='revision')renderRevisionTab();
+    if(sub==='mcq')renderMcqHub();
+    if(window.lucide)lucide.createIcons();
+  };
+
+  /* Make Syllabus render refresh the MCQ Hub without replacing the existing subject/chapter UI. */
+  const originalRenderSyllabus=window.renderSyllabus;
+  window.renderSyllabus=function(){
+    if(typeof originalRenderSyllabus==='function')originalRenderSyllabus();
+    installMcqHub();
+    renderMcqHub();
+  };
+
+  function finalInit(){
+    try{
+      removeDuplicateTrackerCalendar();
+      installMcqHub();
+      ensureRevisionStoreFinal();
+      appState.revisionItems.forEach(ensureRevisionTaskFinal);
+      renderMcqHub();
+      renderRevisionTab();
+      if(typeof window.renderHome==='function')window.renderHome();
+      removeDuplicateTrackerCalendar();
+      saveState();
+      if(window.lucide)lucide.createIcons();
+    }catch(e){console.error('TRACKEBILITY final repair',e);}
+  }
+
+  document.addEventListener('DOMContentLoaded',finalInit);
+  setInterval(()=>{
+    try{
+      removeDuplicateTrackerCalendar();
+      if(currentTab==='home')renderHome();
+      if(currentTab==='syllabus'){installMcqHub();renderMcqHub();}
+      ensureRevisionStoreFinal();
+      appState.revisionItems.forEach(ensureRevisionTaskFinal);
+    }catch(e){}
+  },30000);
+})();
+</script>\n</body>
 </html>
