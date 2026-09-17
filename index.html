@@ -527,15 +527,12 @@
 
       <div id="sylSub-revision" class="hidden space-y-4">
         <div class="rounded-3xl p-4 bg-themeCard border border-themeBorder">
-          <div>
-            <h3 class="text-sm font-black text-themeText">Revision Hub</h3>
-            <p class="text-xs text-themeMuted">Chapters marked <b class="text-amber-400">R</b> in the Syllabus appear here.</p>
-          </div>
+          <h3 class="text-sm font-black text-themeText">Revision Hub</h3>
+          <p class="text-xs text-themeMuted">Chapters marked R appear here. Add any revision topic to your Tasks.</p>
         </div>
 
         <div class="space-y-2">
           <div id="revisionQueueContainer" class="space-y-2"></div>
-          <div id="revisionHistoryLogContainer" class="hidden"></div>
         </div>
       </div>
     </section>
@@ -1007,42 +1004,6 @@
     </div>
   </div>
 
-  <!-- SCHEDULE CUSTOM REVISION MODAL -->
-  <div id="scheduleCustomRevisionModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-3">
-      <div class="flex justify-between items-center">
-        <h3 class="text-sm font-black uppercase">Schedule Topic For Revision</h3>
-        <button onclick="closeModal('scheduleCustomRevisionModal')" class="text-themeMuted"><i data-lucide="x" class="w-5 h-5"></i></button>
-      </div>
-      <div class="space-y-1">
-        <label class="text-[10px] font-bold text-themeMuted">Select Subject</label>
-        <select id="schedRevSubjectSelect" onchange="populateSchedRevChapters()" class="w-full p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs"></select>
-      </div>
-      <div class="space-y-1">
-        <label class="text-[10px] font-bold text-themeMuted">Select Chapter</label>
-        <select id="schedRevChapterSelect" class="w-full p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs"></select>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div class="space-y-1">
-          <label class="text-[10px] font-bold text-themeMuted">Revision Target Date</label>
-          <input type="date" id="schedRevDateInput" class="w-full p-2 rounded-xl bg-themeCardSoft border border-themeBorder text-xs" />
-        </div>
-        <div class="space-y-1">
-          <label class="text-[10px] font-bold text-themeMuted">Revision Time</label>
-          <input type="time" id="schedRevTimeInput" value="09:00" class="w-full p-2 rounded-xl bg-themeCardSoft border border-themeBorder text-xs" />
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div class="space-y-1">
-          <label class="text-[10px] font-bold text-themeMuted">Duration (mins)</label>
-          <input type="number" id="schedRevDurationInput" value="60" min="5" step="5" class="w-full p-2 rounded-xl bg-themeCardSoft border border-themeBorder text-xs" />
-        </div>
-        <div class="p-2 rounded-xl bg-themeCardSoft border border-themeBorder text-[10px] text-themeMuted flex items-center">Also appears automatically in <b class="text-themeText ml-1">Tasks</b>.</div>
-      </div>
-      <button onclick="saveScheduledRevision()" class="w-full py-3 rounded-2xl bg-themeAccent text-white font-bold text-xs shadow active:scale-95 transition">Confirm Schedule</button>
-    </div>
-  </div>
-
   <!-- MCQ ID MODAL -->
   <div id="mcqIdModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-3">
@@ -1134,6 +1095,19 @@
         </div>
       </div>
 
+      <!-- Repeat -->
+      <div class="space-y-2">
+        <label class="text-[10px] font-bold text-themeMuted">Repeat</label>
+        <div id="taskRepeatButtons" class="grid grid-cols-4 gap-1.5">
+          <button type="button" data-repeat-preset="none" onclick="setTaskRepeatPreset('none')" class="task-repeat-preset px-2 py-2 rounded-xl border text-[10px] font-bold transition">✓ None</button>
+          <button type="button" data-repeat-preset="daily" onclick="setTaskRepeatPreset('daily')" class="task-repeat-preset px-2 py-2 rounded-xl border text-[10px] font-bold transition">Daily</button>
+          <button type="button" data-repeat-preset="weekly" onclick="setTaskRepeatPreset('weekly')" class="task-repeat-preset px-2 py-2 rounded-xl border text-[10px] font-bold transition">Weekly</button>
+          <button type="button" data-repeat-preset="monthly" onclick="setTaskRepeatPreset('monthly')" class="task-repeat-preset px-2 py-2 rounded-xl border text-[10px] font-bold transition">Monthly</button>
+        </div>
+        <button type="button" data-repeat-preset="custom" onclick="openCustomRepeatModal()" class="task-repeat-custom w-fit px-3 py-2 rounded-xl border text-[10px] font-bold transition flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> Custom</button>
+        <div id="taskRepeatSummary" class="hidden p-2.5 rounded-xl bg-themeAccent/10 border border-themeAccent/20 text-[10px] font-bold text-themeAccent"></div>
+      </div>
+
       <!-- Optional Time Span -->
       <div class="p-3 rounded-2xl bg-themeCardSoft border border-themeBorder space-y-2">
         <div class="flex justify-between items-center">
@@ -1182,6 +1156,56 @@
       </div>
 
       <button onclick="saveTask()" class="w-full py-3 rounded-2xl bg-themeAccent text-white text-xs font-bold shadow active:scale-95 transition">Save Task</button>
+    </div>
+  </div>
+
+  <!-- CUSTOM REPEAT MODAL -->
+  <div id="customRepeatModal" class="hidden fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="custom-repeat-dialog bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-4 max-h-[92vh] overflow-y-auto custom-scroll">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xl font-medium text-themeText">Custom repeat</h3>
+        <button type="button" onclick="closeCustomRepeatModal()" class="text-themeMuted p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-themeText">Repeat every</label>
+        <div class="flex items-center gap-3">
+          <button type="button" onclick="adjustRepeatDraft('interval',-1)" class="text-2xl text-themeMuted px-2">−</button>
+          <div id="repeatEveryNumber" class="w-20 py-3 rounded-2xl bg-themeCardSoft border border-themeBorder text-center text-lg font-bold text-themeText">1</div>
+          <button type="button" onclick="adjustRepeatDraft('interval',1)" class="text-2xl text-themeText px-2">+</button>
+          <select id="repeatEveryUnit" onchange="setRepeatDraftUnit(this.value)" class="flex-1 bg-transparent border-b border-themeMuted/60 py-2 text-base font-medium text-themeText focus:outline-none">
+            <option value="day">day</option>
+            <option value="week">week</option>
+            <option value="month">month</option>
+            <option value="year">year</option>
+          </select>
+        </div>
+      </div>
+      <div id="repeatDaysSection" class="space-y-2">
+        <label class="text-xs font-bold text-themeText">Repeat on</label>
+        <div id="repeatDayButtons" class="grid grid-cols-4 gap-2"></div>
+      </div>
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-themeText">Ends</label>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" data-repeat-end="never" onclick="setRepeatEnd('never')" class="repeat-end-btn px-3 py-2 rounded-xl border text-xs font-bold">Never</button>
+          <button type="button" data-repeat-end="date" onclick="setRepeatEnd('date')" class="repeat-end-btn px-3 py-2 rounded-xl border text-xs font-bold">On a date</button>
+          <button type="button" data-repeat-end="count" onclick="setRepeatEnd('count')" class="repeat-end-btn px-3 py-2 rounded-xl border text-xs font-bold">After a number of times</button>
+        </div>
+        <div id="repeatEndDateWrap" class="hidden">
+          <input type="date" id="repeatEndDate" class="w-full p-3 rounded-xl bg-themeCardSoft border border-themeBorder text-sm text-themeText">
+        </div>
+        <div id="repeatCountWrap" class="hidden flex items-center gap-3">
+          <button type="button" onclick="adjustRepeatDraft('count',-1)" class="text-2xl text-themeMuted px-2">−</button>
+          <div id="repeatCountNumber" class="w-20 py-3 rounded-2xl bg-themeCardSoft border border-themeBorder text-center text-lg font-bold text-themeText">10</div>
+          <button type="button" onclick="adjustRepeatDraft('count',1)" class="text-2xl text-themeText px-2">+</button>
+          <span class="text-base text-themeText">times</span>
+        </div>
+      </div>
+      <div id="repeatCustomSummary" class="p-3 rounded-2xl bg-themeAccent/15 border border-themeAccent/20 text-sm text-themeText"></div>
+      <div class="flex justify-end items-center gap-5 pt-1">
+        <button type="button" onclick="closeCustomRepeatModal()" class="px-4 py-3 text-sm font-bold text-themeAccent">Cancel</button>
+        <button type="button" onclick="saveCustomRepeat()" class="px-5 py-3 rounded-2xl bg-themeAccent text-white text-sm font-bold shadow active:scale-95 transition">Done</button>
+      </div>
     </div>
   </div>
 
@@ -1437,27 +1461,27 @@
 
     const defaultCanonical19 = [
       { id: 'sub_1', name: 'Surgery', symbol: 'SU', color: '#84cc16', chapters: [
-        { id: 'ch_su_1', name: 'Bariatric Surgery', notes: 'GSC & MESS scoring', status: 'R', totalFocusSeconds: 7200, lastStudied: '2026-09-10', nextRevisionDate: '2026-09-15', revStage: 1 },
-        { id: 'ch_su_2', name: 'Mediastinal Mass', notes: 'Anterior vs posterior', status: 'MCQ', totalFocusSeconds: 3600, lastStudied: '2026-09-12', nextRevisionDate: null, revStage: 0 },
-        { id: 'ch_su_3', name: 'Instruments & Sutures', notes: 'Needle types', status: 'DONE', totalFocusSeconds: 5400, lastStudied: '2026-09-14', nextRevisionDate: '2026-09-20', revStage: 2 },
-        { id: 'ch_su_4', name: 'RP Trauma & Shock', notes: 'Zone 1-3 exploration', status: 'R', totalFocusSeconds: 9000, lastStudied: '2026-09-08', nextRevisionDate: '2026-09-15', revStage: 1 }
+        { id: 'ch_su_1', name: 'Bariatric Surgery', notes: 'GSC & MESS scoring', status: 'R', totalFocusSeconds: 7200, lastStudied: '2026-09-10' },
+        { id: 'ch_su_2', name: 'Mediastinal Mass', notes: 'Anterior vs posterior', status: 'MCQ', totalFocusSeconds: 3600, lastStudied: '2026-09-12' },
+        { id: 'ch_su_3', name: 'Instruments & Sutures', notes: 'Needle types', status: 'DONE', totalFocusSeconds: 5400, lastStudied: '2026-09-14' },
+        { id: 'ch_su_4', name: 'RP Trauma & Shock', notes: 'Zone 1-3 exploration', status: 'R', totalFocusSeconds: 9000, lastStudied: '2026-09-08' }
       ]},
       { id: 'sub_2', name: 'Ophthalmology', symbol: 'OP', color: '#06b6d4', chapters: [
-        { id: 'ch_op_1', name: 'Stye & Chalazion', notes: 'Zeis vs Meibomian', status: 'DONE', totalFocusSeconds: 3600, lastStudied: '2026-09-13', nextRevisionDate: '2026-09-21', revStage: 2 },
-        { id: 'ch_op_2', name: 'C.M. Edema (CME)', notes: 'Flower petal pattern', status: 'MCQ', totalFocusSeconds: 1800, lastStudied: null, nextRevisionDate: null, revStage: 0 },
-        { id: 'ch_op_3', name: 'Astigmatism', notes: 'Rule vs against rule', status: 'BLANK', totalFocusSeconds: 0, lastStudied: null, nextRevisionDate: null, revStage: 0 }
+        { id: 'ch_op_1', name: 'Stye & Chalazion', notes: 'Zeis vs Meibomian', status: 'DONE', totalFocusSeconds: 3600, lastStudied: '2026-09-13' },
+        { id: 'ch_op_2', name: 'C.M. Edema (CME)', notes: 'Flower petal pattern', status: 'MCQ', totalFocusSeconds: 1800, lastStudied: null },
+        { id: 'ch_op_3', name: 'Astigmatism', notes: 'Rule vs against rule', status: 'BLANK', totalFocusSeconds: 0, lastStudied: null }
       ]},
       { id: 'sub_3', name: 'Orthopaedics', symbol: 'OR', color: '#f97316', chapters: [
-        { id: 'ch_or_1', name: 'Bone Tumours', notes: 'Sunburst vs Codman', status: 'R', totalFocusSeconds: 7200, lastStudied: '2026-09-11', nextRevisionDate: '2026-09-15', revStage: 1 },
-        { id: 'ch_or_2', name: 'Fractures & Dislocations', notes: 'Galeazzi vs Monteggia', status: 'DONE', totalFocusSeconds: 4200, lastStudied: '2026-09-09', nextRevisionDate: null, revStage: 0 }
+        { id: 'ch_or_1', name: 'Bone Tumours', notes: 'Sunburst vs Codman', status: 'R', totalFocusSeconds: 7200, lastStudied: '2026-09-11' },
+        { id: 'ch_or_2', name: 'Fractures & Dislocations', notes: 'Galeazzi vs Monteggia', status: 'DONE', totalFocusSeconds: 4200, lastStudied: '2026-09-09' }
       ]},
       { id: 'sub_4', name: 'Anatomy', symbol: 'AN', color: '#f43f5e', chapters: [
-        { id: 'ch_an_1', name: 'Brachial Plexus & Upper Limb', notes: 'Erb vs Klumpke', status: 'BLANK', totalFocusSeconds: 0, lastStudied: null, nextRevisionDate: null, revStage: 0 },
-        { id: 'ch_an_2', name: 'Cranial Nerves', notes: 'Exits & pathways', status: 'BLANK', totalFocusSeconds: 0, lastStudied: null, nextRevisionDate: null, revStage: 0 }
+        { id: 'ch_an_1', name: 'Brachial Plexus & Upper Limb', notes: 'Erb vs Klumpke', status: 'BLANK', totalFocusSeconds: 0, lastStudied: null },
+        { id: 'ch_an_2', name: 'Cranial Nerves', notes: 'Exits & pathways', status: 'BLANK', totalFocusSeconds: 0, lastStudied: null }
       ]},
       { id: 'sub_5', name: 'Physiology', symbol: 'PY', color: '#ec4899', chapters: [] },
       { id: 'sub_6', name: 'Biochemistry', symbol: 'BC', color: '#d946ef', chapters: [
-        { id: 'ch_bc_1', name: 'Glycolysis & Krebs Cycle', notes: 'Rate limiting enzymes', status: 'DONE', totalFocusSeconds: 3600, lastStudied: '2026-09-05', nextRevisionDate: null, revStage: 0 }
+        { id: 'ch_bc_1', name: 'Glycolysis & Krebs Cycle', notes: 'Rate limiting enzymes', status: 'DONE', totalFocusSeconds: 3600, lastStudied: '2026-09-05' }
       ]},
       { id: 'sub_7', name: 'Pharmacology', symbol: 'PH', color: '#a855f7', chapters: [] },
       { id: 'sub_8', name: 'Pathology', symbol: 'PA', color: '#8b5cf6', chapters: [] },
@@ -1466,7 +1490,7 @@
       { id: 'sub_11', name: 'Community Medicine', symbol: 'CM', color: '#0ea5e9', chapters: [] },
       { id: 'sub_12', name: 'ENT', symbol: 'EN', color: '#14b8a6', chapters: [] },
       { id: 'sub_13', name: 'Medicine', symbol: 'ME', color: '#10b981', chapters: [
-        { id: 'ch_me_1', name: 'Cardiology ECG', notes: 'Murmurs', status: 'DONE', totalFocusSeconds: 10800, lastStudied: '2026-09-14', nextRevisionDate: null, revStage: 0 }
+        { id: 'ch_me_1', name: 'Cardiology ECG', notes: 'Murmurs', status: 'DONE', totalFocusSeconds: 10800, lastStudied: '2026-09-14' }
       ]},
       { id: 'sub_14', name: 'Obstetrics & Gynaecology', symbol: 'OB', color: '#eab308', chapters: [] },
       { id: 'sub_15', name: 'Pediatrics', symbol: 'PE', color: '#f59e0b', chapters: [] },
@@ -1513,7 +1537,6 @@
       sleepLogs: [],
       mistakeReviewLogs: [],
       nutritionLogs: [],
-      revisionHistory: [],
       achievementCelebrations: {}
     };
 
@@ -2707,64 +2730,6 @@
       }
     }
 
-    function renderRevisionTab() {
-      const queueContainer = document.getElementById('revisionQueueContainer');
-      const histContainer = document.getElementById('revisionHistoryLogContainer');
-      queueContainer.innerHTML = ''; histContainer.innerHTML = '';
-      let revList = [];
-      const today = getLocalYMD();
-      (appState.subjects || []).forEach(s => {
-        (s.chapters || []).filter(c => c.status === 'R' || (c.nextRevisionDate && c.nextRevisionDate <= today)).forEach(ch => { revList.push({ sub: s, ch }); });
-      });
-
-      if (revList.length === 0) queueContainer.innerHTML = `<p class="text-xs text-themeMuted py-4 text-center">🎉 No revisions pending today!</p>`;
-      else {
-        revList.forEach(({ sub, ch }) => {
-          queueContainer.innerHTML += `<div class="p-3 rounded-2xl bg-themeCard border border-themeBorder flex items-center justify-between"><div><span class="text-[10px] font-bold uppercase text-amber-400">${escapeHtml(sub.name)}</span><h5 class="text-xs font-bold text-themeText">${escapeHtml(ch.name)}</h5></div><button onclick="advanceSpacedRevision('${sub.id}', '${ch.id}')" class="px-3 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow active:scale-95 transition"><i data-lucide="check" class="w-3.5 h-3.5"></i> Revised</button></div>`;
-        });
-      }
-      lucide.createIcons();
-    }
-
-    function advanceSpacedRevision(subId, chId) {
-      const sub = (appState.subjects || []).find(s => s.id === subId);
-      const ch = sub?.chapters?.find(c => c.id === chId);
-      if (!ch) return;
-      ch.status = 'DONE';
-      saveState();
-      renderRevisionTab();
-      renderSyllabus();
-      showToast('Revision completed');
-    }
-
-    function openScheduledRevisionModal() {
-      populateSubjectDropdowns();
-      openModal('scheduleCustomRevisionModal');
-    }
-
-    function saveScheduledRevision() {
-      const subId = document.getElementById('schedRevSubjectSelect').value;
-      const chId = document.getElementById('schedRevChapterSelect').value;
-      const date = document.getElementById('schedRevDateInput').value;
-      const time = document.getElementById('schedRevTimeInput').value || '09:00';
-      if (!date) { showToast('Please select a revision date', 'calendar'); return; }
-      const sub = (appState.subjects || []).find(s => s.id === subId);
-      const ch = sub?.chapters?.find(c => c.id === chId);
-      if (ch) {
-        ch.nextRevisionDate = date;
-        ch.status = 'R';
-        if (!appState.tasks) appState.tasks = [];
-        appState.tasks.push({ id:'tsk_rev_'+Date.now(), name:`Revision: ${ch.name}`, date, startTime:time, endTime:null, duration:60, completed:false, subjectId:subId, chapterId:chId, color:'#f59e0b' });
-        saveState();
-        closeModal('scheduleCustomRevisionModal');
-        renderRevisionTab();
-        renderSyllabus();
-        renderHome();
-        renderTasksTab();
-        showToast('Revision scheduled & added to Tasks', 'calendar-check-2');
-      }
-    }
-
     // ==================== TRACKER MINI CALENDAR ====================
     let trackerCalendarDate=new Date(); let trackerSelectedDate=''; let activeTrackerModule='mistakes';
     function trackerModulesWithCalendar(){return ['gt','gym','sleep','reviews','nutrition'];}
@@ -3139,13 +3104,12 @@
       const options = (appState.subjects || []).map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
       const taskSubject = document.getElementById('taskInputSubject');
       if (taskSubject) taskSubject.innerHTML = `<option value="">No Subject / General</option>${options}`;
-      ['focusSubjectSelect', 'addChapterSubjectSelect', 'mistakeSubject', 'schedRevSubjectSelect', 'mcqIdSubjectSelect', 'editSubjectSelect'].forEach(id => {
+      ['focusSubjectSelect', 'addChapterSubjectSelect', 'mistakeSubject', 'mcqIdSubjectSelect', 'editSubjectSelect'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.innerHTML = options;
       });
       populateFocusChapters();
       populateTaskChapters();
-      populateSchedRevChapters();
       populateMcqIdChapters();
       renderMcqSourcesConfig();
     }
@@ -3168,11 +3132,6 @@
       }
       chapterEl.disabled = false;
       chapterEl.innerHTML = `<option value="">No Chapter / General</option>${(sub.chapters || []).map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}`;
-    }
-
-    function populateSchedRevChapters() {
-      const sub = (appState.subjects || []).find(s => s.id === document.getElementById('schedRevSubjectSelect').value);
-      document.getElementById('schedRevChapterSelect').innerHTML = sub?.chapters?.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('') || '<option value="">No chapters</option>';
     }
 
     function populateMcqIdChapters() {
@@ -3533,64 +3492,13 @@
     if(window.lucide)lucide.createIcons();
   };
 
-  // When a chapter is first marked DONE, automatically start its spaced-revision cycle at +1 day.
-  const baseSetChapterStatus=window.setChapterStatus;
-  window.setChapterStatus=function(subId,chId,status){
-    if(typeof baseSetChapterStatus==='function') baseSetChapterStatus(subId,chId,status);
-    if(status==='DONE'){
-      appState.revisionItems=appState.revisionItems||[];
-      const sub=(appState.subjects||[]).find(x=>x.id===subId),ch=sub?.chapters?.find(x=>x.id===chId);
-      if(ch && !appState.revisionItems.some(r=>r.chapterId===chId)){
-        const r={id:'rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),subjectId:subId,chapterId:chId,topic:ch.name,stage:0,nextDate:addDays(getLocalYMD(),1),time:'09:00',duration:30,history:[]};
-        appState.revisionItems.push(r); appState.tasks=appState.tasks||[]; appState.tasks.push({id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),name:`Revision: ${ch.name}`,date:r.nextDate,startTime:r.time,endTime:null,duration:r.duration,completed:false,subjectId:subId,chapterId:chId,color:'#f59e0b',trackerType:'revision',trackerLogged:false,revisionId:r.id});
-        ch.nextRevisionDate=r.nextDate;ch.revStage=0;saveState();
-        if(typeof renderRevisionTab==='function')renderRevisionTab(); if(typeof renderTasksTab==='function')renderTasksTab(); if(typeof renderHome==='function')renderHome(); showToast(`🔁 ${ch.name} added to +1 revision`);
-      }
-    }
-  };
-
-  // ---------- Revision: true spaced repetition + task integration ----------
-  const intervals=[1,3,7,14,30,60];
-  function ensureRevisionStore(){
-    appState.revisionItems=appState.revisionItems||[];appState.revisionHistory=appState.revisionHistory||[];
-    // migrate older chapter-based schedules once
-    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{if((ch.status==='R'||ch.nextRevisionDate)&&!appState.revisionItems.some(r=>r.chapterId===ch.id))appState.revisionItems.push({id:'rev_'+ch.id,subjectId:s.id,chapterId:ch.id,topic:ch.name,stage:Number(ch.revStage)||0,nextDate:ch.nextRevisionDate||getLocalYMD(),history:[]});}));
-  }
-  function ensureRevisionTask(r){
-    if(!r.nextDate)return;appState.tasks=appState.tasks||[];const active=appState.tasks.find(t=>t.revisionId===r.id&&!t.completed);if(active&&active.date===r.nextDate)return;if(active&&active.date!==r.nextDate)active.date=r.nextDate;
-    if(!active)appState.tasks.push({id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),name:`Revision: ${r.topic}`,date:r.nextDate,startTime:r.time||null,endTime:null,duration:r.duration||30,completed:false,subjectId:r.subjectId||'',chapterId:r.chapterId||'',color:'#f59e0b',trackerType:'revision',trackerLogged:false,revisionId:r.id});
-  }
-  window.renderRevisionTab=function(){
-    ensureRevisionStore();const q=document.getElementById('revisionQueueContainer'),h=document.getElementById('revisionHistoryLogContainer'),today=getLocalYMD();q.innerHTML='';h.innerHTML='';
-    const due=appState.revisionItems.filter(r=>r.nextDate&&r.nextDate<=today);appState.revisionItems.forEach(ensureRevisionTask);
-    q.innerHTML=due.length?due.map(r=>{const s=getSub(r.subjectId),stage=Math.min(r.stage||0,intervals.length-1),label='+'+intervals[stage]+'d';return `<div class="p-3 rounded-2xl bg-themeCard border border-themeBorder flex items-center justify-between gap-2"><div><div class="flex gap-1 mb-1">${intervals.map((n,i)=>`<span class="px-1.5 py-0.5 rounded ${i===stage?'bg-themeAccent text-white':'bg-themeCardSoft text-themeMuted'} text-[8px] font-black">+${n}</span>`).join('')}</div><span class="text-[9px] font-black text-amber-400 uppercase">${esc(s?.name||'General')} • Current ${label}</span><h5 class="text-xs font-bold">${esc(r.topic)}</h5><p class="text-[9px] text-themeMuted">Due ${esc(r.nextDate)}</p></div><div class="flex gap-1"><button onclick="editRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-themeCardSoft text-themeAccent text-[9px] font-bold">Edit</button><button onclick="advanceSpacedRevision('${esc(r.id)}')" class="px-2.5 py-1.5 rounded-xl bg-emerald-500 text-white text-[9px] font-black">Complete +${intervals[Math.min((r.stage||0)+1,intervals.length-1)]}d</button></div></div>`}).join(''):'<p class="text-xs text-themeMuted py-4 text-center">🎉 No revisions pending today!</p>';
-    const hist=(appState.revisionHistory||[]).slice().reverse().slice(0,20);h.innerHTML=hist.length?hist.map(x=>`<div class="p-2.5 rounded-2xl bg-themeCard border border-themeBorder flex justify-between items-center"><div><b class="text-xs">${esc(x.topic)}</b><p class="text-[9px] text-themeMuted">${esc(x.completedDate)} • ${esc(x.fromLabel||'Revision')}</p></div><button onclick="undoRevision('${esc(x.revisionId)}')" class="text-amber-400 text-[9px] font-black">Undo</button></div>`).join(''):'<p class="text-xs text-themeMuted py-4 text-center">No completed revisions yet.</p>';
-    saveState();if(window.lucide)lucide.createIcons();
-  };
-  window.advanceSpacedRevision=function(revisionId,taskId=null){
-    ensureRevisionStore();const r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;const today=getLocalYMD(),oldStage=Number(r.stage)||0,oldDate=r.nextDate||today,nextStage=Math.min(oldStage+1,intervals.length-1),nextDate=addDays(today,intervals[nextStage]);
-    const hist={id:'rh_'+Date.now(),revisionId:r.id,topic:r.topic,completedDate:today,fromStage:oldStage,fromDate:oldDate,fromLabel:'+'+intervals[oldStage]+'d',taskId:taskId||null};appState.revisionHistory.push(hist);r.stage=nextStage;r.nextDate=nextDate;
-    const sub=getSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.revStage=nextStage;ch.nextRevisionDate=nextDate;ch.status='R';}
-    const t=taskId?(appState.tasks||[]).find(x=>x.id===taskId):(appState.tasks||[]).find(x=>x.revisionId===r.id&&!x.completed&&x.date===today);if(t){t.completed=true;t.trackerLogged=true;}
-    ensureRevisionTask(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision completed → +${intervals[nextStage]}d`);
-  };
-  window.undoRevision=function(revisionId){ensureRevisionStore();const idx=[...(appState.revisionHistory||[])].map((x,i)=>({x,i})).reverse().find(o=>o.x.revisionId===revisionId);if(!idx)return;const hist=idx.x,r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;const currentDate=r.nextDate;r.stage=hist.fromStage;r.nextDate=hist.fromDate;appState.revisionHistory.splice(idx.i,1);appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId===revisionId&&!t.completed&&t.date===currentDate));const t=(appState.tasks||[]).find(x=>x.id===hist.taskId);if(t)t.completed=false;const sub=getSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;ch.status='R';}ensureRevisionTask(r);saveState();refreshAllViews();showToast('Revision undone');};
-  window.openScheduledRevisionModal=function(){populateSubjectDropdowns();document.getElementById('schedRevDateInput').value=addDays(getLocalYMD(),1);document.getElementById('schedRevTimeInput').value='09:00';openModal('scheduleCustomRevisionModal');};
-  window.saveScheduledRevision=function(){
-    ensureRevisionStore();const subId=document.getElementById('schedRevSubjectSelect').value,chId=document.getElementById('schedRevChapterSelect').value,date=document.getElementById('schedRevDateInput').value,time=document.getElementById('schedRevTimeInput').value||'09:00',duration=Number(document.getElementById('schedRevDurationInput').value)||30,sub=getSub(subId),ch=sub?.chapters?.find(x=>x.id===chId);if(!sub||!ch||!date){showToast('Select a subject, chapter and date','alert-circle');return;}
-    const editId=document.getElementById('scheduleCustomRevisionModal').dataset.editRevisionId||'';let r=editId?appState.revisionItems.find(x=>x.id===editId):appState.revisionItems.find(x=>x.chapterId===chId);if(r){r.subjectId=subId;r.chapterId=chId;r.topic=ch.name;r.nextDate=date;r.time=time;r.duration=duration;delete document.getElementById('scheduleCustomRevisionModal').dataset.editRevisionId;}else{r={id:'rev_'+Date.now(),subjectId:subId,chapterId:chId,topic:ch.name,stage:0,nextDate:date,time,duration,history:[]};appState.revisionItems.push(r);}ch.revStage=r.stage;ch.nextRevisionDate=date;ch.status='R';ensureRevisionTask(r);saveState();closeModal('scheduleCustomRevisionModal');refreshAllViews();showToast(editId?'Revision updated':'Spaced revision scheduled & added to Tasks');
-  };
-  window.editRevision=function(id){const r=(appState.revisionItems||[]).find(x=>x.id===id);if(!r)return;document.getElementById('schedRevSubjectSelect').value=r.subjectId;populateSchedRevChapters();document.getElementById('schedRevChapterSelect').value=r.chapterId;document.getElementById('schedRevDateInput').value=r.nextDate;document.getElementById('schedRevTimeInput').value=r.time||'09:00';document.getElementById('schedRevDurationInput').value=r.duration||30;document.getElementById('scheduleCustomRevisionModal').dataset.editRevisionId=id;openModal('scheduleCustomRevisionModal');};
-  // revision task completion/undo wrapper
-  const baseToggle=window.toggleTaskDone;window.toggleTaskDone=function(id){const t=(appState.tasks||[]).find(x=>x.id===id);if(t?.revisionId){if(t.completed){const r=appState.revisionItems.find(x=>x.id===t.revisionId);const h=[...(appState.revisionHistory||[])].reverse().find(x=>x.revisionId===t.revisionId&&x.taskId===t.id);if(r&&h){r.stage=h.fromStage;r.nextDate=h.fromDate;const hi=appState.revisionHistory.findIndex(x=>x.id===h.id);if(hi>=0)appState.revisionHistory.splice(hi,1);t.completed=false;ensureRevisionTask(r);saveState();refreshAllViews();showToast('Revision task undone');}else{t.completed=false;saveState();refreshAllViews();}}else{advanceSpacedRevision(t.revisionId,t.id);}return;}if(typeof baseToggle==='function')return baseToggle(id);};
-
   // ---------- Statistics: derive everything from current state ----------
   window.renderStatistics=function(){
     const limit=getStatsDateLimit(), sessions=(appState.focusSessions||[]).filter(s=>s.date>=limit), sec=sessions.reduce((a,s)=>a+Number(s.durationSeconds||0),0);
     const dates=[];for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);dates.push(ymd(d));}
     const mcqDates=(appState.mcqCounts||{}),mcqPractice=Object.keys(mcqDates).filter(d=>d>=limit).reduce((a,d)=>a+Number(mcqDates[d]||0),0),gtFiltered=(appState.grandTests||[]).filter(g=>g.date>=limit),gtQ=gtFiltered.reduce((a,g)=>a+Number(g.total||0),0),mcqTotal=mcqPractice+gtQ;
     const correct=gtFiltered.reduce((a,g)=>a+Number(g.correct||0),0),wrong=gtFiltered.reduce((a,g)=>a+Number(g.wrong||0),0),accuracy=(correct+wrong)?Math.round(correct/(correct+wrong)*100):0;
-    const tasks=(appState.tasks||[]).filter(t=>t.date>=limit),doneTasks=tasks.filter(t=>t.completed).length,revs=(appState.revisionHistory||[]).filter(r=>r.completedDate>=limit).length;
+    const tasks=(appState.tasks||[]).filter(t=>t.date>=limit),doneTasks=tasks.filter(t=>t.completed).length,revs=0;
     const latest=gtFiltered.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
     const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};set('statCardStudy',formatMins(sec/60));set('perfTotalStudyTime',formatMins(sec/60));set('statCardMCQ',mcqTotal.toLocaleString());set('statCardAccuracy',(correct+wrong)?accuracy+'%':'No GT data');set('statCardRevision',String(revs));set('statCardTasks',`${doneTasks} / ${tasks.length}`);set('statCardGT',latest?`${Number(latest.score)||0} marks`:'No GT data');set('statCardGTSub',latest?`Latest • ${latest.date}`:'Latest score');
     const avgDays=currentStatsTimeFilter==='7d'?7:currentStatsTimeFilter==='30d'?30:currentStatsTimeFilter==='3m'?90:null;set('perfAvgStudyTime',avgDays?formatMins(sec/60/avgDays):formatMins(sec/60/Math.max(1,new Set(sessions.map(s=>s.date)).size)));
@@ -3614,8 +3522,8 @@
   }
   function injectRevisionEditDeleteNote(){const save=document.querySelector('#scheduleCustomRevisionModal button[onclick="saveScheduledRevision()"]');if(save)save.textContent='Save Revision';}
   document.addEventListener('DOMContentLoaded',()=>{
-    try{migrateRecords();ensureMcqIdUI();injectRevisionEditDeleteNote();}catch(e){console.error('Update5 migration',e)}
-    renderTrackerMiniCalendar();renderMcqIdTracker();renderNutritionTracker();renderGymTracker();renderGTTracker();renderStatistics();if(currentTab==='syllabus')renderRevisionTab();
+    try{migrateRecords();ensureMcqIdUI();}catch(e){console.error('Update5 migration',e)}
+    renderTrackerMiniCalendar();renderMcqIdTracker();renderNutritionTracker();renderGymTracker();renderGTTracker();renderStatistics();
   });
 })();
 </script>
@@ -3702,16 +3610,6 @@
     if(activeSessionConfig||timerRunning){const type=activeSessionConfig?.type||(focusType==='Other'?appState.otherTypeName:focusType),s=getSub(activeSessionConfig?.subjectId||document.getElementById('focusSubjectSelect')?.value),ch=s?.chapters?.find(c=>c.id===(activeSessionConfig?.chapterId||document.getElementById('focusChapterSelect')?.value));info.textContent=`${type} • ${s?.name||'General'}${ch?' • '+ch.name:''}`;let secs=isPomoMode?pomoRemainingSec:timerElapsedSeconds;d.textContent=`${pad(Math.floor(secs/3600))}:${pad(Math.floor(secs/60)%60)}:${pad(secs%60)}`;btn.textContent=timerRunning?'Pause':'Resume';btn.onclick=()=>toggleFocusTimer();}else{d.textContent='00:00:00';info.textContent='No active focus session';btn.textContent='Open Focus';btn.onclick=()=>switchTab('focus');}
   }
 
-  /* Revision tasks must remain a first-class editable Task type. */
-  function ensureRevisionTaskTypeOption(){const sel=document.getElementById('taskInputType');if(sel&&!sel.querySelector('option[value="revision"]'))sel.insertAdjacentHTML('beforeend','<option value="revision">🔁 Revision</option>');}
-  /* ---------- Task editing must remain editable for revision tasks ---------- */
-  const baseSaveTask=window.saveTask;
-  window.saveTask=function(){
-    const editId=document.getElementById('taskEditId')?.value;const old=editId?(appState.tasks||[]).find(t=>t.id===editId):null;
-    if(typeof baseSaveTask==='function')baseSaveTask();
-    if(old?.revisionId){const t=(appState.tasks||[]).find(x=>x.id===editId),r=(appState.revisionItems||[]).find(x=>x.id===old.revisionId);if(t&&r){r.nextDate=t.date;r.time=t.startTime||null;r.duration=t.duration||30;r.color=t.color||r.color||'#f59e0b';r.name=t.name;saveState();}}
-  };
-
   /* ---------- MCQ history: week strip + expandable month + detailed entries ---------- */
   let mcqWeekCursor=new Date();let mcqHistoryExpanded=false;let mcqSelectedDate='';
   function startOfWeek(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
@@ -3749,40 +3647,9 @@
   const oldGTTracker=window.renderGTTracker;window.renderGTTracker=function(){if(typeof oldGTTracker==='function')oldGTTracker();const c=document.getElementById('gtListContainer');if(c)c.querySelectorAll('button[onclick^="undoGT"]').forEach(btn=>{const id=(btn.getAttribute('onclick').match(/'([^']+)'/)||[])[1];if(id){const e=document.createElement('span');e.innerHTML=`<button onclick="openEditGT('${esc(id)}')" class="px-2 py-1 rounded-lg bg-themeCardSoft text-themeAccent text-[9px] font-black">Edit</button>`;btn.parentNode.insertBefore(e.firstElementChild,btn);}});};
   const oldChart=window.renderGTScoreChart;window.renderGTScoreChart=function(tests){if(typeof oldChart==='function')oldChart(tests);const el=document.getElementById('gtScoreChart');if(!el||!tests?.length)return;const svg=el.querySelector('svg');if(svg){svg.setAttribute('height','320');svg.style.minWidth=Math.max(620,tests.length*125)+'px';svg.style.width=Math.max(620,tests.length*125)+'px';svg.querySelectorAll('text').forEach(t=>{const s=t.getAttribute('font-size');if(s&&Number(s)<10)t.setAttribute('font-size','11');});}const sc=el.querySelector('div.overflow-x-auto');if(sc)sc.style.overflowX='auto';};
 
-  /* ---------- Revision Hub: stage lanes + deterministic undo ---------- */
-  function ensureRevisionData(){
-    appState.revisionItems=appState.revisionItems||[];appState.revisionHistory=appState.revisionHistory||[];
-    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{if((ch.status==='R'||ch.nextRevisionDate)&&!appState.revisionItems.some(r=>r.chapterId===ch.id))appState.revisionItems.push({id:'rev_'+ch.id,subjectId:s.id,chapterId:ch.id,topic:ch.name,stage:Number(ch.revStage)||0,nextDate:ch.nextRevisionDate||getLocalYMD(),time:'09:00',duration:30,color:'#f59e0b'});}));
-  }
-  function ensureRevTask(r){
-    appState.tasks=appState.tasks||[];let t=appState.tasks.find(x=>x.revisionId===r.id&&!x.completed);if(!t)t=appState.tasks.find(x=>x.revisionId===r.id&&x.date===r.nextDate);if(!t){t={id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),name:`Revision: ${r.topic}`,date:r.nextDate,startTime:r.time||null,endTime:r.time?formatTimeEnd(r.time,r.duration||30):null,duration:r.duration||30,completed:false,subjectId:r.subjectId||'',chapterId:r.chapterId||'',color:r.color||'#f59e0b',trackerType:'revision',trackerLogged:false,revisionId:r.id};appState.tasks.push(t);}else{t.date=r.nextDate;t.name=`Revision: ${r.topic}`;t.subjectId=r.subjectId||'';t.chapterId=r.chapterId||'';t.startTime=r.time||null;t.duration=r.duration||30;t.color=r.color||t.color||'#f59e0b';if(t.startTime)t.endTime=formatTimeEnd(t.startTime,t.duration);}return t;
-  }
-  function formatTimeEnd(start,dur){if(!start)return null;const [h,m]=start.split(':').map(Number),x=h*60+m+Number(dur||30),hh=Math.floor((x%1440)/60),mm=x%60;return `${pad(hh)}:${pad(mm)}`;}
-  window.renderRevisionTab=function(){
-    ensureRevisionData();const q=document.getElementById('revisionQueueContainer'),h=document.getElementById('revisionHistoryLogContainer');if(!q)return;const today=getLocalYMD();appState.revisionItems.forEach(ensureRevTask);
-    const due=appState.revisionItems.filter(r=>r.nextDate&&r.nextDate<=today);const lanes=intervals.map((n,i)=>{const arr=due.filter(r=>Math.min(Number(r.stage)||0,intervals.length-1)===i);return `<div class="rounded-2xl bg-themeCardSoft/50 border border-themeBorder p-2.5 space-y-2"><div class="flex justify-between items-center"><b class="text-[10px] uppercase text-themeAccent">+${n} Day</b><span class="text-[9px] text-themeMuted">${arr.length} due</span></div>${arr.length?arr.map(r=>{const s=getSub(r.subjectId);return `<div class="p-2.5 rounded-xl bg-themeCard border border-themeBorder"><div class="flex justify-between gap-2"><div class="min-w-0"><span class="text-[8px] font-black text-themeMuted uppercase">${esc(s?.name||'General')}</span><b class="block text-[11px]">${esc(r.topic)}</b><span class="text-[8px] text-themeMuted">Due ${esc(r.nextDate)}${r.time?' • '+formatTime(r.time):''}</span></div><div class="flex gap-1 shrink-0"><button onclick="editRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-themeCardSoft text-themeAccent text-[8px] font-black">Edit</button><button onclick="advanceSpacedRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[8px] font-black">Done → +${intervals[Math.min((Number(r.stage)||0)+1,intervals.length-1)]}</button></div></div></div>`}).join(''):'<div class="text-[9px] text-themeMuted py-2">Nothing here.</div>'}</div>`;}).join('');q.innerHTML=lanes;
-    const hist=(appState.revisionHistory||[]).slice().reverse().slice(0,30);h.innerHTML=hist.length?hist.map(x=>`<div class="p-2.5 rounded-xl bg-themeCard border border-themeBorder flex justify-between items-center"><div><b class="text-[10px]">${esc(x.topic)}</b><p class="text-[8px] text-themeMuted">Completed ${esc(x.completedDate)} • ${esc(x.fromLabel||'Revision')}</p></div><button onclick="undoRevision('${esc(x.revisionId)}','${esc(x.id)}')" class="text-amber-400 text-[9px] font-black">Undo ↩</button></div>`).join(''):'<p class="text-[9px] text-themeMuted py-3 text-center">No completed revisions yet.</p>';
-    if(window.lucide)lucide.createIcons();
-  };
-  window.advanceSpacedRevision=function(revisionId,taskId=null){
-    ensureRevisionData();const r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;const today=getLocalYMD(),fromStage=Math.min(Number(r.stage)||0,intervals.length-1),fromDate=r.nextDate||today,nextStage=Math.min(fromStage+1,intervals.length-1),nextDate=addDays(today,intervals[nextStage]);const oldTask=taskId?(appState.tasks||[]).find(x=>x.id===taskId):(appState.tasks||[]).find(x=>x.revisionId===r.id&&!x.completed&&x.date===fromDate);const hist={id:'rh_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),revisionId:r.id,topic:r.topic,completedDate:today,fromStage,fromDate,fromLabel:'+'+intervals[fromStage]+'d',taskId:oldTask?.id||null};appState.revisionHistory.push(hist);if(oldTask){oldTask.completed=true;oldTask.trackerLogged=true;}r.stage=nextStage;r.nextDate=nextDate;const sub=getSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.revStage=nextStage;ch.nextRevisionDate=nextDate;ch.status='R';}ensureRevTask(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision completed → +${intervals[nextStage]} day task scheduled`);};
-  window.undoRevision=function(revisionId,historyId=null){
-    ensureRevisionData();let idx=historyId?appState.revisionHistory.findIndex(x=>x.id===historyId):-1;if(idx<0)idx=[...(appState.revisionHistory||[])].map((x,i)=>({x,i})).reverse().find(o=>o.x.revisionId===revisionId)?.i??-1;if(idx<0)return;const hist=appState.revisionHistory[idx],r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;const currentNext=r.nextDate;appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId===revisionId&&!t.completed&&t.date===currentNext));r.stage=hist.fromStage;r.nextDate=hist.fromDate;r.lastUndoDate=getLocalYMD();appState.revisionHistory.splice(idx,1);const oldTask=hist.taskId?(appState.tasks||[]).find(t=>t.id===hist.taskId):null;if(oldTask){oldTask.completed=false;oldTask.date=hist.fromDate;}const sub=getSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;ch.status='R';}ensureRevTask(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision undone → returned to +${intervals[r.stage]} day stage`);};
-  /* Keep Task completion synchronized with revision stage. */
-  const baseTaskToggle=window.toggleTaskDone;window.toggleTaskDone=function(id){const t=(appState.tasks||[]).find(x=>x.id===id);if(t?.revisionId){if(t.completed){const h=[...(appState.revisionHistory||[])].reverse().find(x=>x.taskId===id);if(h)undoRevision(t.revisionId,h.id);else{t.completed=false;saveState();refreshAllViews();}}else advanceSpacedRevision(t.revisionId,id);return;}if(typeof baseTaskToggle==='function')return baseTaskToggle(id);};
 
-  /* ---------- Compact week calendar for Tasks ---------- */
-  let taskWeekCursor=new Date();
-  window.renderTaskMonthCalendar=function(){const grid=document.getElementById('taskEnlargedMonthGrid'),label=document.getElementById('taskMonthLabel');if(!grid||!label)return;const d=new Date(selectedCalendarDate+'T00:00:00');taskWeekCursor=d;label.textContent=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});let holder=grid.parentElement;if(holder&&!holder.querySelector('#taskWeekExpandBtn')){const b=document.createElement('button');b.id='taskWeekExpandBtn';b.className='px-2 py-1 rounded-lg bg-themeCardSoft text-[9px] font-bold text-themeAccent';b.textContent='Week';b.onclick=()=>{taskWeekExpanded=!taskWeekExpanded;renderTaskMonthCalendar();};const top=holder.querySelector('.flex.justify-between.items-center');top?.appendChild(b);}grid.innerHTML='';const dates=taskWeekExpanded?Array.from({length:new Date(d.getFullYear(),d.getMonth()+1,0).getDate()},(_,i)=>new Date(d.getFullYear(),d.getMonth(),i+1)):Array.from({length:7},(_,i)=>{const x=startOfWeek(d);x.setDate(x.getDate()+i);return x;});if(taskWeekExpanded){const first=(new Date(d.getFullYear(),d.getMonth(),1).getDay()+6)%7;for(let i=0;i<first;i++)grid.innerHTML+='<span></span>';}dates.forEach(x=>{const date=ymd(x),tasks=(appState.tasks||[]).filter(t=>t.date===date),done=tasks.length&&tasks.every(t=>t.completed),sel=date===selectedCalendarDate;grid.innerHTML+=`<button onclick="selectedCalendarDate='${date}';renderTasksTab()" class="${taskWeekExpanded?'h-9':'h-12'} rounded-xl ${sel?'bg-themeAccent text-white':date===getLocalYMD()?'border border-themeAccent text-themeAccent bg-themeCardSoft':'bg-themeCardSoft text-themeText'} flex flex-col items-center justify-center"><span class="text-[9px] font-black">${x.getDate()}</span><span class="text-[8px]">${tasks.length?tasks.length+' task'+(tasks.length>1?'s':''):''}</span>${done?'<span class="text-[8px] text-emerald-400">✓</span>':''}</button>`;});};
-  let taskWeekExpanded=false;
-
-  /* ---------- Goal calendar: same week-first behaviour ---------- */
-  let goalWeekCursor=new Date(),goalCalendarExpanded=false;
-  window.renderMonthlyShadedGrid=function(){const grid=document.getElementById('monthlyGridCalendar');if(!grid)return;const d=new Date();d.setMonth(d.getMonth()+(appState.goalMonthOffset||0));goalWeekCursor=d;document.getElementById('goalTrackingMonthLabel').textContent=d.toLocaleDateString('en-US',{month:'short',year:'numeric'});const gm=Math.max(1,Number(appState.dailyFocusGoalMinutes||0)),mh=gm/60;document.getElementById('monthlyThresholdBadge').textContent=`Goal: ≥${formatGoalShort(gm)}`;grid.innerHTML='';const dates=goalCalendarExpanded?Array.from({length:new Date(d.getFullYear(),d.getMonth()+1,0).getDate()},(_,i)=>new Date(d.getFullYear(),d.getMonth(),i+1)):Array.from({length:7},(_,i)=>{const x=startOfWeek(d);x.setDate(x.getDate()+i);return x;});if(goalCalendarExpanded){const first=(new Date(d.getFullYear(),d.getMonth(),1).getDay()+6)%7;['M','T','W','T','F','S','S'].forEach(h=>grid.innerHTML+=`<span class="font-black text-[10px] text-themeMuted">${h}</span>`);for(let i=0;i<first;i++)grid.innerHTML+='<span></span>';}else{['M','T','W','T','F','S','S'].forEach(h=>grid.innerHTML+=`<span class="font-black text-[9px] text-themeMuted">${h}</span>`);}dates.forEach(x=>{const date=ymd(x),sec=getFocusSecondsForDate(date),hrs=sec/3600;let c='bg-themeCardSoft/30 text-themeMuted';if(hrs>=mh)c='bg-emerald-500/80 text-white font-black';else if(hrs>=2)c='bg-amber-400/75 text-slate-950 font-black';else if(hrs>0)c='bg-rose-500/75 text-white font-black';grid.innerHTML+=`<div class="${goalCalendarExpanded?'h-7':'h-10'} rounded-lg flex flex-col items-center justify-center text-[9px] ${c}"><span>${x.getDate()}</span>${hrs>0?`<span class="text-[7px]">${formatGoalShort(Math.round(sec/60))}</span>`:''}</div>`;});let toggle=document.getElementById('monthlyCalendarToggle');if(toggle){toggle.innerHTML=`<span class="text-[8px] font-black">${goalCalendarExpanded?'Week':'Expand'}</span>`;toggle.onclick=()=>{goalCalendarExpanded=!goalCalendarExpanded;renderMonthlyShadedGrid();};}};
-
-  /* ---------- Init / migrate ---------- */
-  function migrate(){ensureMCQActivityStore();(appState.grandTests||[]).forEach(g=>{if(g.total==null)g.total=200;if(g.attempted==null)g.attempted=(Number(g.correct)||0)+(Number(g.wrong)||0);});ensureRevisionData();appState.revisionItems.forEach(r=>ensureRevTask(r));saveState();}
-  document.addEventListener('DOMContentLoaded',()=>{try{migrate();ensureRevisionTaskTypeOption();installHomeLayout();renderHome();renderTrackerMiniCalendar();renderStatistics();if(currentTab==='syllabus')renderRevisionTab();}catch(e){console.error('Update5 final patch',e);}});
+  function migrate(){ensureMCQActivityStore();(appState.grandTests||[]).forEach(g=>{if(g.total==null)g.total=200;if(g.attempted==null)g.attempted=(Number(g.correct)||0)+(Number(g.wrong)||0);});saveState();}
+  document.addEventListener('DOMContentLoaded',()=>{try{migrate();installHomeLayout();renderHome();renderTrackerMiniCalendar();renderStatistics();}catch(e){console.error('Update5 final patch',e);}});
   setInterval(()=>{if(currentTab==='home'){renderHomeLiveFocus();renderHomeMCQ();}},1000);
 })();
 </script>
@@ -3914,120 +3781,17 @@
     (appState.tasks||[]).forEach(t=>{if((t.name||'').toLowerCase().includes(q))push('Task',t.name,t.date||'No date',()=>{switchTab('tasks');closeModal('searchModal');setTimeout(()=>openTaskActions(t.id),100);});});
     (appState.mistakes||[]).forEach(m=>{if((m.topic||'').toLowerCase().includes(q)||((m.notes||'').toLowerCase().includes(q)))push('Mistake',m.topic,m.status||'Unresolved',()=>{switchTab('tracker');switchTrackerModule('mistakes');closeModal('searchModal');});});
     (appState.grandTests||[]).forEach(g=>{if((g.name||'').toLowerCase().includes(q))push('Grand Test',g.name,`${g.date||''} • ${g.score||0} marks`,()=>{switchTab('tracker');switchTrackerModule('gt');closeModal('searchModal');});});
-    (appState.revisionItems||[]).forEach(r=>{if((r.topic||'').toLowerCase().includes(q))push('Revision',r.topic,`+${intervals[Math.min(Number(r.stage)||0,intervals.length-1)]} stage`,()=>{switchTab('syllabus');switchSyllabusSubTab('revision');closeModal('searchModal');});});
+
     (appState.mcqIds||[]).forEach(m=>{if((m.qid||'').toLowerCase().includes(q)||(m.topic||'').toLowerCase().includes(q))push('MCQ ID',m.qid||'',`${m.topic||''} • ${m.date||''}`,()=>{switchTab('tracker');switchTrackerModule('mcqid');closeModal('searchModal');});});
     c.innerHTML=results.slice(0,30).map((r,i)=>`<button data-search-index="${i}" class="w-full text-left p-3 rounded-2xl bg-themeCardSoft border border-themeBorder hover:border-themeAccent transition"><div class="flex justify-between gap-2"><span class="text-[8px] font-black uppercase text-themeAccent">${esc(r.type)}</span><span class="text-[8px] text-themeMuted">Open →</span></div><b class="block text-xs text-themeText mt-1">${esc(r.title)}</b><span class="block text-[9px] text-themeMuted mt-0.5">${esc(r.sub)}</span></button>`).join('')||'<p class="text-themeMuted text-center py-6">No matching records found.</p>';
     c.querySelectorAll('[data-search-index]').forEach((b,i)=>b.onclick=results[i].action);
   };
 
-  /* ---------- Revision Hub: truly independent from syllabus completion ---------- */
-  const REV_INTERVALS=[1,3,7,14,30,60];
-  function revAddDays(date,n){const d=new Date((date||getLocalYMD())+'T00:00:00');d.setDate(d.getDate()+n);return getLocalYMD(d);}
-  function revGetSub(id){return (appState.subjects||[]).find(s=>s.id===id);}
-  function ensureRevisionStore6(){
-    appState.revisionItems=appState.revisionItems||[];appState.revisionHistory=appState.revisionHistory||[];appState.tasks=appState.tasks||[];
-    // Only migrate chapter R markers when there is no existing revision record.
-    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{
-      if(ch.status==='R' && !appState.revisionItems.some(r=>r.chapterId===ch.id)){
-        const stage=Math.max(0,Math.min(REV_INTERVALS.length-1,Number(ch.revStage)||0));
-        appState.revisionItems.push({id:'rev_'+ch.id,subjectId:s.id,chapterId:ch.id,topic:ch.name,stage,nextDate:ch.nextRevisionDate||revAddDays(getLocalYMD(),REV_INTERVALS[stage]),time:'09:00',duration:30,color:'#f59e0b'});
-      }
-    }));
-  }
-  function ensureRevisionTask6(r){
-    appState.tasks=appState.tasks||[];
-    let t=appState.tasks.find(x=>x.revisionId===r.id && !x.completed);
-    if(!t){
-      t={id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),name:`Revision: ${r.topic}`,date:r.nextDate,startTime:r.time||null,endTime:r.time?formatTimeEnd(r.time,r.duration||30):null,duration:r.duration||30,completed:false,subjectId:r.subjectId||'',chapterId:r.chapterId||'',color:r.color||'#f59e0b',trackerType:'revision',revisionId:r.id,revisionStage:Number(r.stage)||0};
-      appState.tasks.push(t);
-    }else{
-      t.name=`Revision: ${r.topic}`;t.date=r.nextDate;t.subjectId=r.subjectId||'';t.chapterId=r.chapterId||'';t.revisionStage=Number(r.stage)||0;
-      if(!t.completed){t.startTime=r.time||null;t.duration=r.duration||30;t.color=r.color||t.color||'#f59e0b';t.endTime=t.startTime?formatTimeEnd(t.startTime,t.duration):null;}
-    }
-    return t;
-  }
-  function syncRevisionTaskFromTask6(t){
-    if(!t?.revisionId)return;const r=(appState.revisionItems||[]).find(x=>x.id===t.revisionId);if(!r)return;
-    r.nextDate=t.date;r.time=t.startTime||null;r.duration=Number(t.duration)||30;r.color=t.color||r.color||'#f59e0b';
-  }
 
-  window.setChapterStatus=function(subId,chId,status){
-    const sub=revGetSub(subId),ch=sub?.chapters?.find(c=>c.id===chId);if(!ch)return;
-    if(status==='R'){
-      ensureRevisionStore6();let r=appState.revisionItems.find(x=>x.chapterId===chId);
-      if(!r){r={id:'rev_'+chId,subjectId:subId,chapterId:chId,topic:ch.name,stage:0,nextDate:revAddDays(getLocalYMD(),1),time:'09:00',duration:30,color:'#f59e0b'};appState.revisionItems.push(r);}else{r.subjectId=subId;r.topic=ch.name;if(!r.nextDate)r.nextDate=revAddDays(getLocalYMD(),REV_INTERVALS[Math.min(Number(r.stage)||0,REV_INTERVALS.length-1)]);}
-      // R is a revision marker only; it must never imply syllabus completion.
-      ch.status='R';ch.revStage=Number(r.stage)||0;ch.nextRevisionDate=r.nextDate;ensureRevisionTask6(r);
-      saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`${ch.name} added to Revision +${REV_INTERVALS[r.stage]}`);return;
-    }
-    ch.status=status;saveState();renderSyllabus();renderStatistics();
-  };
-
-  window.renderRevisionTab=function(){
-    ensureRevisionStore6();appState.revisionItems.forEach(ensureRevisionTask6);
-    const q=document.getElementById('revisionQueueContainer'),h=document.getElementById('revisionHistoryLogContainer');if(!q)return;
-    const lanes=REV_INTERVALS.map((n,i)=>{
-      const arr=appState.revisionItems.filter(r=>Math.min(Number(r.stage)||0,REV_INTERVALS.length-1)===i).sort((a,b)=>(a.nextDate||'').localeCompare(b.nextDate||''));
-      return `<div class="rounded-2xl bg-themeCardSoft/50 border border-themeBorder p-2.5 space-y-2"><div class="flex justify-between items-center"><b class="text-[10px] uppercase text-themeAccent">+${n} Day</b><span class="text-[9px] text-themeMuted">${arr.length} topic${arr.length===1?'':'s'}</span></div>${arr.length?arr.map(r=>{const s=revGetSub(r.subjectId),due=r.nextDate<=getLocalYMD(),next=REV_INTERVALS[Math.min((Number(r.stage)||0)+1,REV_INTERVALS.length-1)];return `<div class="p-2.5 rounded-xl bg-themeCard border ${due?'border-themeAccent':'border-themeBorder'}"><div class="flex justify-between gap-2"><div class="min-w-0"><span class="text-[8px] font-black text-themeMuted uppercase">${esc(s?.name||'General')}</span><b class="block text-[11px] text-themeText">${esc(r.topic)}</b><span class="text-[8px] ${due?'text-themeAccent font-bold':'text-themeMuted'}">${due?'Due now':'Scheduled'} • ${esc(r.nextDate)}${r.time?' • '+formatTime(r.time):''}</span></div><div class="flex gap-1 shrink-0"><button onclick="editRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-themeCardSoft text-themeAccent text-[8px] font-black">Edit</button><button onclick="advanceSpacedRevision('${esc(r.id)}')" class="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[8px] font-black">Done → +${next}</button></div></div></div>`}).join(''):'<div class="text-[9px] text-themeMuted py-2">Nothing here.</div>'}</div>`;
-    }).join('');q.innerHTML=lanes;
-    const hist=(appState.revisionHistory||[]).slice().reverse().slice(0,30);h.innerHTML=hist.length?hist.map(x=>`<div class="p-2.5 rounded-xl bg-themeCard border border-themeBorder flex justify-between items-center"><div><b class="text-[10px] text-themeText">${esc(x.topic)}</b><p class="text-[8px] text-themeMuted">Completed ${esc(x.completedDate)} • from +${REV_INTERVALS[x.fromStage]}d • next +${REV_INTERVALS[x.toStage]}d</p></div><button onclick="undoRevision('${esc(x.revisionId)}','${esc(x.id)}')" class="text-amber-400 text-[9px] font-black">Undo ↩</button></div>`).join(''):'<p class="text-[9px] text-themeMuted py-3 text-center">No completed revisions yet.</p>';
-    if(window.lucide)lucide.createIcons();
-  };
-
-  window.advanceSpacedRevision=function(revisionId,taskId=null){
-    ensureRevisionStore6();const r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;
-    const today=getLocalYMD(),fromStage=Math.max(0,Math.min(REV_INTERVALS.length-1,Number(r.stage)||0)),fromDate=r.nextDate||today,toStage=Math.min(fromStage+1,REV_INTERVALS.length-1),toDate=revAddDays(today,REV_INTERVALS[toStage]);
-    let oldTask=taskId?(appState.tasks||[]).find(x=>x.id===taskId):(appState.tasks||[]).find(x=>x.revisionId===r.id&&!x.completed&&x.date===fromDate);
-    const hist={id:'rh_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),revisionId:r.id,topic:r.topic,completedDate:today,fromStage,fromDate,toStage,toDate,taskId:oldTask?.id||null,previousTaskState:oldTask?{date:oldTask.date,startTime:oldTask.startTime||null,endTime:oldTask.endTime||null,duration:oldTask.duration,color:oldTask.color}:null};
-    appState.revisionHistory.push(hist);
-    if(oldTask)oldTask.completed=true;
-    r.stage=toStage;r.nextDate=toDate;
-    // Do not change syllabus completion state. R remains only a revision marker.
-    const sub=revGetSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.status='R';ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
-    ensureRevisionTask6(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision completed → +${REV_INTERVALS[toStage]} day task scheduled`);
-  };
-
-  window.undoRevision=function(revisionId,historyId=null){
-    ensureRevisionStore6();let idx=historyId?appState.revisionHistory.findIndex(x=>x.id===historyId):-1;if(idx<0){for(let i=appState.revisionHistory.length-1;i>=0;i--){if(appState.revisionHistory[i].revisionId===revisionId){idx=i;break;}}}if(idx<0)return;
-    const hist=appState.revisionHistory[idx],r=appState.revisionItems.find(x=>x.id===hist.revisionId);if(!r)return;
-    // Remove only the future task generated by the completion being undone.
-    appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId===r.id&&!t.completed&&t.date===hist.toDate));
-    r.stage=hist.fromStage;r.nextDate=hist.fromDate;
-    // Restore the exact old task where possible.
-    let oldTask=hist.taskId?(appState.tasks||[]).find(t=>t.id===hist.taskId):null;
-    if(oldTask){oldTask.completed=false;if(hist.previousTaskState){Object.assign(oldTask,hist.previousTaskState);}oldTask.revisionStage=hist.fromStage;}
-    appState.revisionHistory.splice(idx,1);
-    const sub=revGetSub(r.subjectId),ch=sub?.chapters?.find(x=>x.id===r.chapterId);if(ch){ch.status='R';ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
-    ensureRevisionTask6(r);saveState();refreshAllViews();if(currentTab==='syllabus')renderRevisionTab();showToast(`Revision undone → returned to +${REV_INTERVALS[r.stage]} day stage`);
-  };
-
-  /* Task Menu edit/completion keeps revision properties synchronized, but never marks Syllabus DONE. */
-  const baseToggle6=window.toggleTaskDone;
-  window.toggleTaskDone=function(id){
-    const t=(appState.tasks||[]).find(x=>x.id===id);
-    if(t?.revisionId){
-      if(t.completed){
-        const h=[...(appState.revisionHistory||[])].reverse().find(x=>x.taskId===id);if(h)undoRevision(t.revisionId,h.id);else{t.completed=false;saveState();refreshAllViews();}
-      }else advanceSpacedRevision(t.revisionId,id);
-      return;
-    }
-    if(typeof baseToggle6==='function')return baseToggle6(id);
-  };
-
-  /* Keep the revision record updated when its task is edited in Task Menu. */
-  const baseSaveTask6=window.saveTask;
-  window.saveTask=function(){
-    const id=document.getElementById('taskEditId')?.value||'',before=id?(appState.tasks||[]).find(t=>t.id===id):null;
-    if(typeof baseSaveTask6==='function')baseSaveTask6();
-    const t=id?(appState.tasks||[]).find(x=>x.id===id):null;if(t?.revisionId)syncRevisionTaskFromTask6(t);
-    if(t?.revisionId)saveState();
-  };
 
   function initUpdate6(){
     removeStudyDistribution6();updateHomeTaskHeader();updateExamCountdown6();
-    ensureRevisionStore6();appState.revisionItems.forEach(ensureRevisionTask6);saveState();
     if(activeTrackerModule==='gt')renderGTTracker();
-    if(currentTab==='syllabus')renderRevisionTab();
   }
   document.addEventListener('DOMContentLoaded',initUpdate6);
   setInterval(()=>{removeStudyDistribution6();if(currentTab==='home')updateHomeTaskHeader();},3000);
@@ -4086,7 +3850,6 @@
 \n\n<style id="trackability-final-repair-styles">
   /* Final UI repair: compact layout, readable wrapping, no duplicate tracker calendar. */
   #trackerMiniCalendarWrap { display:none !important; }
-  #revisionHistoryLogContainer, #revisionHistoryLogContainer + * { display:none !important; }
   #sylSub-revision > .space-y-2.pt-2 { display:none !important; }
   #sylSub-revision > div:first-child button { display:none !important; }
   .tb-wrap { min-width:0; overflow-wrap:anywhere; word-break:break-word; white-space:normal; }
@@ -4207,224 +3970,6 @@
   };
 
   /* ============================================================
-     3) SYLLABUS: chapter status. R starts/keeps spaced revision.
-     ============================================================ */
-  function ensureRevisionStoreFinal(){
-    appState.revisionItems=Array.isArray(appState.revisionItems)?appState.revisionItems:[];
-    appState.revisionUndoStack=appState.revisionUndoStack||{};
-    appState.tasks=Array.isArray(appState.tasks)?appState.tasks:[];
-
-    // Migrate chapter markers and normalize to the five requested stages.
-    (appState.subjects||[]).forEach(s=>(s.chapters||[]).forEach(ch=>{
-      if(ch.status==='R' || ch.nextRevisionDate){
-        let r=appState.revisionItems.find(x=>x.chapterId===ch.id);
-        if(!r){
-          let stage=Math.max(0,Math.min(intervals.length-1,Number(ch.revStage)||0));
-          r={id:'rev_'+ch.id,subjectId:s.id,chapterId:ch.id,topic:ch.name,stage,nextDate:ch.nextRevisionDate||addDays(getLocalYMD(),intervals[stage]),time:'09:00',duration:30};
-          appState.revisionItems.push(r);
-        }else{
-          r.subjectId=s.id;r.chapterId=ch.id;r.topic=ch.name;r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
-          if(!r.nextDate)r.nextDate=ch.nextRevisionDate||addDays(getLocalYMD(),intervals[r.stage]);
-        }
-        ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;
-      }
-    }));
-    // Clean stale revision records whose chapter no longer exists.
-    appState.revisionItems=appState.revisionItems.filter(r=>{const s=getSub(r.subjectId);return !!s?.chapters?.some(c=>c.id===r.chapterId);});
-  }
-
-  function getRevisionTask(r){
-    return (appState.tasks||[]).find(t=>t.revisionId===r.id&&!t.completed);
-  }
-
-  function ensureRevisionTaskFinal(r){
-    if(!r||!r.nextDate)return;
-    appState.tasks=appState.tasks||[];
-    const today=getLocalYMD();
-    let active=getRevisionTask(r);
-
-    // If the revision was missed, carry the same revision forward to today.
-    // Do not create a pile of duplicate daily tasks.
-    if(active && active.date < today){
-      active.date=today;
-      active.startTime=r.time||active.startTime||null;
-      active.endTime=active.startTime&&r.duration?formatTimeEndFinal(active.startTime,r.duration):active.endTime||null;
-    }
-    if(active && active.date!==r.nextDate && r.nextDate>today){
-      active.date=r.nextDate;
-    }
-
-    // Remove duplicate unfinished revision tasks for the same revision.
-    const unfinished=(appState.tasks||[]).filter(t=>t.revisionId===r.id&&!t.completed);
-    if(unfinished.length>1){
-      const keep=unfinished.sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))[0];
-      appState.tasks=(appState.tasks||[]).filter(t=>t.revisionId!==r.id||t.completed||t.id===keep.id);
-      active=keep;
-    }
-
-    if(!active){
-      const date=r.nextDate<=today?today:r.nextDate;
-      active={
-        id:'tsk_rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-        name:`Revision: ${r.topic}`,date,startTime:r.time||null,
-        endTime:r.time?formatTimeEndFinal(r.time,r.duration||30):null,
-        duration:Number(r.duration)||30,completed:false,reminderEnabled:false,
-        reminderPreset:'',subjectId:r.subjectId||'',chapterId:r.chapterId||'',
-        color:'#f59e0b',trackerType:'revision',trackerLogged:false,revisionId:r.id
-      };
-      appState.tasks.push(active);
-    }else{
-      active.name=`Revision: ${r.topic}`;active.subjectId=r.subjectId||'';active.chapterId=r.chapterId||'';
-      active.trackerType='revision';active.revisionId=r.id;active.color=active.color||'#f59e0b';
-      active.duration=Number(r.duration)||Number(active.duration)||30;
-    }
-    return active;
-  }
-
-  function formatTimeEndFinal(start,duration){
-    if(!start)return null;
-    const [h,m]=start.split(':').map(Number);const total=h*60+m+Number(duration||30);
-    return `${pad(Math.floor((total%1440)/60))}:${pad(total%60)}`;
-  }
-
-  function syncChapterRevision(r){
-    const s=getSub(r.subjectId),ch=s?.chapters?.find(c=>c.id===r.chapterId);
-    if(ch){ch.status='R';ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
-  }
-
-  window.setChapterStatus=function(subId,chId,status){
-    const s=getSub(subId),ch=s?.chapters?.find(c=>c.id===chId);
-    if(!ch)return;
-    ensureRevisionStoreFinal();
-    ch.status=status;
-    if(status==='R'){
-      let r=appState.revisionItems.find(x=>x.chapterId===chId);
-      if(!r){
-        r={id:'rev_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),subjectId:subId,chapterId:chId,topic:ch.name,stage:0,nextDate:addDays(getLocalYMD(),1),time:'09:00',duration:30};
-        appState.revisionItems.push(r);
-      }else{
-        r.subjectId=subId;r.topic=ch.name;r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
-        if(!r.nextDate||r.nextDate<getLocalYMD())r.nextDate=addDays(getLocalYMD(),intervals[r.stage]);
-      }
-      ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;
-      ensureRevisionTaskFinal(r);
-      saveState();renderSyllabus();renderRevisionTab();renderHome();renderTasksTab();
-      showToast(`🔁 ${ch.name} added to +${intervals[r.stage]} revision`);
-      return;
-    }
-    // Other syllabus statuses do not destroy an existing revision cycle.
-    saveState();renderSyllabus();renderMcqHub();renderRevisionTab();
-  };
-
-  /* ============================================================
-     4) REVISION HUB: only current stages, Edit + Undo. No history.
-     ============================================================ */
-  window.renderRevisionTab=function(){
-    ensureRevisionStoreFinal();
-    const q=document.getElementById('revisionQueueContainer');
-    if(!q)return;
-    const today=getLocalYMD();
-    appState.revisionItems.forEach(r=>{
-      r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
-      const ch=getSub(r.subjectId)?.chapters?.find(c=>c.id===r.chapterId);
-      if(ch){r.topic=ch.name;ch.revStage=r.stage;ch.nextRevisionDate=r.nextDate;}
-      ensureRevisionTaskFinal(r);
-    });
-    const active=appState.revisionItems.slice().sort((a,b)=>{
-      const sa=Number(a.stage)||0,sb=Number(b.stage)||0;return sa-sb || (a.nextDate||'').localeCompare(b.nextDate||'') || (a.topic||'').localeCompare(b.topic||'');
-    });
-    if(!active.length){
-      q.innerHTML='<div class="tb-empty rounded-3xl bg-themeCard border border-themeBorder text-themeMuted"><div class="text-2xl mb-2">🔁</div><p class="text-xs font-bold">No chapters in the Revision Hub.</p><p class="text-[10px] mt-1">Tap R on a chapter to start its spaced-revision cycle.</p></div>';
-    }else{
-      q.innerHTML=intervals.map((days,i)=>{
-        const arr=active.filter(r=>Number(r.stage)===i);
-        return `<div class="rounded-2xl bg-themeCardSoft/50 border border-themeBorder p-3 space-y-2">
-          <div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2"><b class="text-[10px] uppercase text-themeAccent">+${days} Day</b><span class="text-[9px] text-themeMuted">${arr.length} chapter${arr.length===1?'':'s'}</span></div></div>
-          ${arr.length?arr.map(r=>{
-            const s=getSub(r.subjectId),due=(r.nextDate||'')<=today,task=getRevisionTask(r);
-            const dueText=due?'Due now':`Next: ${r.nextDate}`;
-            const canUndo=!!appState.revisionUndoStack[r.id];
-            return `<div class="tb-revision-card rounded-xl p-3 bg-themeCard border ${due?'border-themeAccent':'border-themeBorder'}">
-              <div class="flex items-start justify-between gap-3">
-                <div class="tb-wrap min-w-0 flex-1">
-                  <div class="text-[8px] font-black uppercase text-themeMuted">${esc(s?.name||'General')}</div>
-                  <div class="text-xs font-black text-themeText mt-0.5 tb-wrap">${esc(r.topic)}</div>
-                  <div class="text-[9px] mt-1 ${due?'text-themeAccent font-bold':'text-themeMuted'}">${dueText}${task&&task.date===today?' • Task on Today':''}</div>
-                </div>
-                <div class="flex gap-1 shrink-0">
-                  <button onclick="editRevision('${esc(r.id)}')" class="px-2 py-1.5 rounded-lg bg-themeCardSoft text-themeAccent text-[9px] font-black">Edit</button>
-                  ${canUndo?`<button onclick="undoRevision('${esc(r.id)}')" class="px-2 py-1.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/20 text-[9px] font-black">Undo</button>`:''}
-                </div>
-              </div>
-            </div>`;
-          }).join(''):'<div class="text-[9px] text-themeMuted py-1">Nothing here.</div>'}
-        </div>`;
-      }).join('');
-    }
-    const h=document.getElementById('revisionHistoryLogContainer');if(h)h.innerHTML='';
-    const histSection=h?.closest('.space-y-2.pt-2');if(histSection)histSection.style.display='none';
-    saveState();if(window.lucide)lucide.createIcons();
-  };
-
-  window.advanceSpacedRevision=function(revisionId,taskId=null){
-    ensureRevisionStoreFinal();
-    const r=appState.revisionItems.find(x=>x.id===revisionId);if(!r)return;
-    const today=getLocalYMD();
-    const fromStage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));
-    const fromDate=r.nextDate||today;
-    const oldTask=taskId?(appState.tasks||[]).find(t=>t.id===taskId):(getRevisionTask(r));
-    // Save exactly one reversible transition; it is not displayed as history.
-    appState.revisionUndoStack[r.id]={fromStage,fromDate,taskId:oldTask?.id||null,oldTaskDate:oldTask?.date||null,oldTaskCompleted:oldTask?.completed||false};
-    if(oldTask)oldTask.completed=true;
-
-    const toStage=fromStage<intervals.length-1?fromStage+1:fromStage;
-    r.stage=toStage;
-    r.nextDate=addDays(today,intervals[toStage]);
-    syncChapterRevision(r);
-    ensureRevisionTaskFinal(r);
-    saveState();refreshAllViews();renderRevisionTab();renderMcqHub();
-    showToast(`✓ Revision completed → +${intervals[toStage]} day task scheduled`);
-  };
-
-  window.undoRevision=function(revisionId){
-    ensureRevisionStoreFinal();
-    const r=appState.revisionItems.find(x=>x.id===revisionId),u=appState.revisionUndoStack[r?.id];
-    if(!r||!u)return;
-    // Remove the current future revision task, then restore the previous task.
-    appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId===r.id&&!t.completed));
-    r.stage=Math.max(0,Math.min(intervals.length-1,Number(u.fromStage)||0));
-    r.nextDate=u.fromDate||addDays(getLocalYMD(),intervals[r.stage]);
-    const oldTask=u.taskId?(appState.tasks||[]).find(t=>t.id===u.taskId):null;
-    if(oldTask){oldTask.completed=!!u.oldTaskCompleted;oldTask.date=u.oldTaskDate||r.nextDate;}
-    delete appState.revisionUndoStack[r.id];
-    syncChapterRevision(r);ensureRevisionTaskFinal(r);saveState();refreshAllViews();renderRevisionTab();
-    showToast(`↩ Revision returned to +${intervals[r.stage]} day stage`);
-  };
-
-  /* Completing a revision task advances the revision; unchecking it performs Undo. */
-  const originalToggleTaskDone=window.toggleTaskDone;
-  window.toggleTaskDone=function(id){
-    const t=(appState.tasks||[]).find(x=>x.id===id);
-    if(t?.revisionId){
-      if(t.completed) undoRevision(t.revisionId);
-      else advanceSpacedRevision(t.revisionId,t.id);
-      return;
-    }
-    if(typeof originalToggleTaskDone==='function')return originalToggleTaskDone(id);
-  };
-
-  /* Revision edit modal keeps the stage; only schedule fields change. */
-  const originalSaveScheduledRevision=window.saveScheduledRevision;
-  window.saveScheduledRevision=function(){
-    if(typeof originalSaveScheduledRevision==='function'){
-      originalSaveScheduledRevision();
-      ensureRevisionStoreFinal();
-      appState.revisionItems.forEach(r=>{r.stage=Math.max(0,Math.min(intervals.length-1,Number(r.stage)||0));syncChapterRevision(r);ensureRevisionTaskFinal(r);});
-      saveState();renderRevisionTab();renderHome();renderTasksTab();
-    }
-  };
-
-  /* ============================================================
      5) HOME TASKS: reliable Next Up, completion, add-task date, wrapping.
      ============================================================ */
   function homeNextTask(tasks){
@@ -4537,8 +4082,6 @@
     try{
       removeDuplicateTrackerCalendar();
       installMcqHub();
-      ensureRevisionStoreFinal();
-      appState.revisionItems.forEach(ensureRevisionTaskFinal);
       renderMcqHub();
       renderRevisionTab();
       if(typeof window.renderHome==='function')window.renderHome();
@@ -4554,8 +4097,6 @@
       removeDuplicateTrackerCalendar();
       if(currentTab==='home')renderHome();
       if(currentTab==='syllabus'){installMcqHub();renderMcqHub();}
-      ensureRevisionStoreFinal();
-      appState.revisionItems.forEach(ensureRevisionTaskFinal);
     }catch(e){}
   },30000);
 })();
@@ -4827,8 +4368,7 @@
 })();
 </script>
 
-</body>
-</html>
+
 
 <style id="trackability-user-fixes-20260917">
   /* Task calendar: week navigation + expanded month mode */
@@ -5037,7 +4577,7 @@
     (appState.tasks||[]).forEach(t=>{if(matches(t.name))push('Task',t.name,t.date||'No date',()=>{selectedCalendarDate=t.date||todayF();switchTab('tasks');closeModal('searchModal');setTimeout(()=>renderTasksTab(),80);});});
     (appState.mistakes||[]).forEach(m=>{if(matches(m.topic)||matches(m.notes))push('Mistake',m.topic,m.status||'Unresolved',()=>{switchTab('tracker');switchTrackerModule('mistakes');closeModal('searchModal');});});
     (appState.grandTests||[]).forEach(g=>{if(matches(g.name))push('Grand Test',g.name,`${g.date||''} • ${g.score||0} marks`,()=>{switchTab('tracker');switchTrackerModule('gt');closeModal('searchModal');});});
-    (appState.revisionItems||[]).forEach(r=>{if(matches(r.topic))push('Revision',r.topic,`+${intervals[Math.min(Number(r.stage)||0,intervals.length-1)]} stage`,()=>{switchTab('syllabus');switchSyllabusSubTab('revision');closeModal('searchModal');});});
+
     (appState.mcqIds||[]).forEach(m=>{if(matches(m.qid)||matches(m.topic))push('MCQ ID',m.qid||m.topic||'',`${m.topic||''} • ${m.date||''}`,()=>{switchTab('tracker');switchTrackerModule('mcqid');closeModal('searchModal');});});
     (appState.mcqActivities||[]).forEach(m=>{if(matches(m.name)||matches(m.topic))push('MCQ',m.name||m.topic||'MCQ',`${m.questions||0} questions`,()=>{switchTab('syllabus');switchSyllabusSubTab('mcq');closeModal('searchModal');});});
     c.innerHTML=results.slice(0,40).map((r,i)=>`<button data-search-index="${i}" class="w-full text-left p-3 rounded-2xl bg-themeCardSoft border border-themeBorder hover:border-themeAccent transition"><div class="flex justify-between gap-2"><span class="text-[8px] font-black uppercase text-themeAccent">${escF(r.type)}</span><span class="text-[8px] text-themeMuted">Open →</span></div><b class="block text-xs text-themeText mt-1">${escF(r.title)}</b><span class="block text-[9px] text-themeMuted mt-0.5">${escF(r.sub)}</span></button>`).join('')||'<p class="text-themeMuted text-center py-6">No matching records found.</p>';
@@ -5058,247 +4598,358 @@
       if(typeof currentTab!=='undefined'&&currentTab==='home')renderHomeTasksFinal();
     }catch(e){}
   },1000);
-
-  /* ============================================================
-     FINAL REVISION HUB — SIMPLE R-MARKER SYSTEM
-     - No spaced-repetition stages or dates.
-     - R chapters are the Revision Hub.
-     - Add to Task reuses the normal Task modal with
-       Subject + Chapter locked to the selected revision topic.
-     ============================================================ */
-  (function installSimpleRevisionHub(){
-    let revisionTaskContext = null;
-
-    function simpleRevisionEntries(){
-      const out=[];
-      (appState.subjects||[]).forEach(sub=>{
-        (sub.chapters||[]).forEach(ch=>{
-          if(ch.status==='R') out.push({subject:sub,chapter:ch});
-        });
-      });
-      return out;
-    }
-
-    function clearLegacyRevisionData(){
-      appState.revisionItems=[];
-      appState.revisionHistory=[];
-      appState.revisionUndoStack={};
-
-      // Remove only unfinished tasks generated by the old spaced-revision
-      // system. Completed historical tasks are retained.
-      appState.tasks=(appState.tasks||[]).filter(t=>!(t.revisionId && !t.completed));
-
-      // Old scheduling metadata must no longer drive anything.
-      (appState.subjects||[]).forEach(sub=>(sub.chapters||[]).forEach(ch=>{
-        delete ch.revStage;
-        delete ch.nextRevisionDate;
-      }));
-
-      saveState();
-    }
-
-    function unlockTaskSubjectChapter(){
-      const subject=document.getElementById('taskInputSubject');
-      const chapter=document.getElementById('taskInputChapter');
-      if(subject)subject.disabled=false;
-      if(chapter)chapter.disabled=false;
-      revisionTaskContext=null;
-    }
-
-    function lockRevisionTaskFields(subId,chId){
-      const sub=(appState.subjects||[]).find(x=>x.id===subId);
-      const ch=sub?.chapters?.find(x=>x.id===chId);
-      if(!sub||!ch)return false;
-
-      const subject=document.getElementById('taskInputSubject');
-      const chapter=document.getElementById('taskInputChapter');
-      if(!subject||!chapter)return false;
-
-      subject.value=subId;
-      if(typeof window.populateTaskChapters==='function')window.populateTaskChapters();
-      chapter.value=chId;
-
-      subject.disabled=true;
-      chapter.disabled=true;
-
-      const labels=document.querySelectorAll('#taskModal label');
-      labels.forEach(label=>{
-        const text=(label.textContent||'').trim();
-        if(text.startsWith('Subject Link')) label.innerHTML='Subject Link <span class="text-amber-400">(Locked)</span>';
-        if(text.startsWith('Chapter Link')) label.innerHTML='Chapter Link <span class="text-amber-400">(Locked)</span>';
-      });
-      return true;
-    }
-
-    window.renderRevisionTab=function(){
-      const q=document.getElementById('revisionQueueContainer');
-      if(!q)return;
-
-      const entries=simpleRevisionEntries();
-      if(!entries.length){
-        q.innerHTML=`
-          <div class="rounded-3xl bg-themeCard border border-themeBorder text-center p-6">
-            <div class="text-2xl mb-2">🔁</div>
-            <p class="text-xs font-bold text-themeText">No revision topics yet.</p>
-            <p class="text-[10px] text-themeMuted mt-1">Mark a chapter as <b class="text-amber-400">R</b> in Syllabus to add it here.</p>
-          </div>`;
-      }else{
-        q.innerHTML=entries.map(({subject,chapter})=>`
-          <div class="rounded-2xl bg-themeCard border border-themeBorder p-3">
-            <div class="flex items-center justify-between gap-3">
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-black uppercase tracking-wide text-themeAccent truncate">${escapeHtml(subject.name||'Subject')}</div>
-                <div class="text-sm font-black text-themeText mt-0.5 break-words">${escapeHtml(chapter.name||'Revision Topic')}</div>
-              </div>
-              <button
-                onclick="openRevisionTaskModal('${escapeHtml(subject.id)}','${escapeHtml(chapter.id)}')"
-                class="shrink-0 px-3 py-2 rounded-xl bg-themeAccent text-white text-[10px] font-black flex items-center gap-1.5 active:scale-95 transition">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                Add to Task
-              </button>
-            </div>
-          </div>`).join('');
-      }
-
-      const h=document.getElementById('revisionHistoryLogContainer');
-      if(h)h.innerHTML='';
-      if(window.lucide)lucide.createIcons();
-    };
-
-    window.setChapterStatus=function(subId,chId,status){
-      const sub=(appState.subjects||[]).find(x=>x.id===subId);
-      const ch=sub?.chapters?.find(x=>x.id===chId);
-      if(!ch)return;
-
-      ch.status=status;
-      // R is only a marker. It does not create dates, stages or automatic tasks.
-      delete ch.revStage;
-      delete ch.nextRevisionDate;
-
-      saveState();
-      if(typeof window.renderSyllabus==='function')window.renderSyllabus();
-      if(typeof window.renderHomeSyllabusCard==='function')window.renderHomeSyllabusCard();
-      if(typeof window.renderMcqHub==='function')window.renderMcqHub();
-      if(typeof window.renderRevisionTab==='function')window.renderRevisionTab();
-      showToast(status==='R' ? `🔁 ${ch.name} added to Revision Hub` : `${ch.name} updated`);
-    };
-
-    window.openRevisionTaskModal=function(subId,chId){
-      const sub=(appState.subjects||[]).find(x=>x.id===subId);
-      const ch=sub?.chapters?.find(x=>x.id===chId);
-      if(!sub||!ch||ch.status!=='R')return;
-
-      // Reuse the exact normal task creation questions/UI first. The normal
-      // opener intentionally clears any previous revision context.
-      if(typeof window.openAddTaskModal==='function')window.openAddTaskModal();
-
-      // Set the revision context only after the normal opener has finished.
-      revisionTaskContext={subjectId:subId,chapterId:chId};
-
-      const date=document.getElementById('taskInputDate');
-      if(date&&!date.value)date.value=getLocalYMD();
-
-      const name=document.getElementById('taskInputName');
-      if(name&&!name.value)name.value=`Revision: ${ch.name}`;
-
-      lockRevisionTaskFields(subId,chId);
-      document.getElementById('taskModalTitle').textContent='Add Revision Task';
-    };
-
-    // Every normal Add Task starts unlocked.
-    const previousOpenAddTask=window.openAddTaskModal;
-    window.openAddTaskModal=function(){
-      revisionTaskContext=null;
-      if(typeof previousOpenAddTask==='function')previousOpenAddTask();
-      unlockTaskSubjectChapter();
-      const labels=document.querySelectorAll('#taskModal label');
-      labels.forEach(label=>{
-        const text=(label.textContent||'').trim();
-        if(text.startsWith('Subject Link')) label.innerHTML='Subject Link <span class="text-themeMuted/70">(Optional)</span>';
-        if(text.startsWith('Chapter Link')) label.innerHTML='Chapter Link <span class="text-themeMuted/70">(Optional)</span>';
-      });
-    };
-
-    // Keep normal Edit Task behaviour. Revision-created tasks can still be edited
-    // like ordinary tasks; the subject/chapter link remains intact.
-    const previousOpenEditTask=window.openEditTaskModal;
-    window.openEditTaskModal=function(id){
-      revisionTaskContext=null;
-      if(typeof previousOpenEditTask==='function')previousOpenEditTask(id);
-      unlockTaskSubjectChapter();
-    };
-
-    const previousSaveTask=window.saveTask;
-    window.saveTask=function(){
-      const ctx=revisionTaskContext ? {...revisionTaskContext} : null;
-
-      // Disabled controls do not need special handling because the existing
-      // saveTask reads their .value. Re-assert the locked values immediately
-      // before saving to prevent any accidental mismatch.
-      if(ctx){
-        const subject=document.getElementById('taskInputSubject');
-        const chapter=document.getElementById('taskInputChapter');
-        if(subject)subject.value=ctx.subjectId;
-        if(chapter)chapter.value=ctx.chapterId;
-      }
-
-      const editingId=document.getElementById('taskEditId')?.value||'';
-      const beforeIds=new Set((appState.tasks||[]).map(t=>t.id));
-
-      if(typeof previousSaveTask==='function')previousSaveTask();
-
-      if(ctx){
-        let created=null;
-        if(!editingId){
-          created=(appState.tasks||[]).find(t=>!beforeIds.has(t.id));
-        }else{
-          created=(appState.tasks||[]).find(t=>t.id===editingId);
-        }
-        if(created){
-          created.revisionTopic=true;
-          created.revisionSubjectId=ctx.subjectId;
-          created.revisionChapterId=ctx.chapterId;
-          created.subjectId=ctx.subjectId;
-          created.chapterId=ctx.chapterId;
-          saveState();
-        }
-      }
-      revisionTaskContext=null;
-      unlockTaskSubjectChapter();
-      if(typeof window.renderRevisionTab==='function')window.renderRevisionTab();
-    };
-
-    // Completing/uncompleting a revision-created task is ordinary task behaviour.
-    // It must NOT advance a revision stage because stages no longer exist.
-    const previousToggleTask=window.toggleTaskDone;
-    window.toggleTaskDone=function(id){
-      if(typeof previousToggleTask==='function')previousToggleTask(id);
-      setTimeout(()=>{
-        if(typeof window.renderRevisionTab==='function')window.renderRevisionTab();
-      },0);
-    };
-
-    // Replace the old syllabus-subtab switch so Revision always uses the
-    // new renderer rather than an earlier lexical implementation.
-    const previousSwitchSyllabus=window.switchSyllabusSubTab;
-    window.switchSyllabusSubTab=function(sub){
-      if(typeof previousSwitchSyllabus==='function')previousSwitchSyllabus(sub);
-      if(sub==='revision')window.renderRevisionTab();
-    };
-
-    // Legacy modal is no longer part of the Revision Hub workflow.
-    const legacySchedule=document.getElementById('scheduleCustomRevisionModal');
-    if(legacySchedule)legacySchedule.classList.add('hidden');
-
-    // Run after older initialization handlers, then keep only the R markers.
-    function simpleRevisionInit(){
-      try{
-        clearLegacyRevisionData();
-        window.renderRevisionTab();
-      }catch(e){console.error('Simple Revision Hub init',e);}
-    }
-    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',simpleRevisionInit,{once:true});
-    else simpleRevisionInit();
-  })();
 })();
 </script>
+
+
+<style id="trackability-clean-revision-layer">
+  /* ============================================================
+     CLEAN REVISION HUB
+     R in Syllabus is a persistent marker only.
+     The Hub is derived directly from chapter.status === 'R'.
+     No stages, dates, history, auto-created revision tasks,
+     +1/+3/+7/+14/+30 scheduling, or revision completion state.
+     ============================================================ */
+  #revisionQueueContainer .revision-topic-card{min-width:0;}
+  #revisionQueueContainer .revision-topic-name{overflow-wrap:anywhere;word-break:break-word;white-space:normal;}
+  .revision-locked-field{opacity:.7;cursor:not-allowed;}
+</style>
+<script id="trackability-clean-revision-layer-script">
+(function(){
+  'use strict';
+  var revisionTaskContext=null;
+  var baseOpenAddTask=window.openAddTaskModal;
+  var baseOpenEditTask=window.openEditTaskModal;
+  var baseSaveTask=window.saveTask;
+  var baseCloseModal=window.closeModal;
+
+  function escR(v){
+    if(typeof window.escapeHtml==='function')return window.escapeHtml(String(v==null?'':v));
+    return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});
+  }
+  function getRevisionChapter(subId,chId){
+    var sub=(appState.subjects||[]).find(function(s){return s.id===subId;});
+    var ch=sub&&(sub.chapters||[]).find(function(c){return c.id===chId;});
+    return sub&&ch?{subject:sub,chapter:ch}:null;
+  }
+  function revisionTopics(){
+    var out=[];
+    (appState.subjects||[]).forEach(function(sub){
+      (sub.chapters||[]).forEach(function(ch){
+        if(ch.status==='R')out.push({subject:sub,chapter:ch});
+      });
+    });
+    return out.sort(function(a,b){return String(a.subject.name||'').localeCompare(String(b.subject.name||''))||String(a.chapter.name||'').localeCompare(String(b.chapter.name||''));});
+  }
+  function unlockRevisionFields(){
+    ['taskInputSubject','taskInputChapter'].forEach(function(id){
+      var el=document.getElementById(id);if(!el)return;
+      el.disabled=false;el.classList.remove('revision-locked-field');el.removeAttribute('aria-readonly');
+    });
+  }
+  function lockRevisionFields(){
+    ['taskInputSubject','taskInputChapter'].forEach(function(id){
+      var el=document.getElementById(id);if(!el)return;
+      el.disabled=true;el.classList.add('revision-locked-field');el.setAttribute('aria-readonly','true');
+    });
+  }
+  function refreshRevisionViews(){
+    try{saveState();}catch(e){}
+    if(typeof renderSyllabus==='function')renderSyllabus();
+    if(typeof renderStatistics==='function')renderStatistics();
+    if(typeof window.renderRevisionTab==='function')window.renderRevisionTab();
+    if(window.lucide)lucide.createIcons();
+  }
+
+  /* One-time migration: discard only data belonging to the old spaced-revision engine. */
+  function migrateLegacyRevisionData(){
+    var changed=false;
+    (appState.subjects||[]).forEach(function(sub){
+      (sub.chapters||[]).forEach(function(ch){
+        if(Object.prototype.hasOwnProperty.call(ch,'nextRevisionDate')){delete ch.nextRevisionDate;changed=true;}
+        if(Object.prototype.hasOwnProperty.call(ch,'revStage')){delete ch.revStage;changed=true;}
+      });
+    });
+    if(Array.isArray(appState.revisionItems)&&appState.revisionItems.length){appState.revisionItems=[];changed=true;}
+    if(Array.isArray(appState.revisionHistory)&&appState.revisionHistory.length){appState.revisionHistory=[];changed=true;}
+    if(appState.revisionUndoStack){delete appState.revisionUndoStack;changed=true;}
+    var before=(appState.tasks||[]).length;
+    appState.tasks=(appState.tasks||[]).filter(function(t){return !t.revisionId && t.trackerType!=='revision';});
+    if(appState.tasks.length!==before)changed=true;
+    if(changed)saveState();
+  }
+
+  window.setChapterStatus=function(subId,chId,status){
+    var item=getRevisionChapter(subId,chId);if(!item)return;
+    item.chapter.status=status;
+    /* R has no side effects beyond membership in the Hub. */
+    delete item.chapter.nextRevisionDate;
+    delete item.chapter.revStage;
+    saveState();
+    if(typeof renderSyllabus==='function')renderSyllabus();
+    if(typeof renderHomeSyllabusCard==='function')renderHomeSyllabusCard();
+    if(typeof renderRevisionTab==='function')renderRevisionTab();
+    if(typeof renderStatistics==='function')renderStatistics();
+    showToast(status==='R'?item.chapter.name+' added to Revision Hub':item.chapter.name+' removed from Revision Hub');
+  };
+
+  window.renderRevisionTab=function(){
+    var q=document.getElementById('revisionQueueContainer');if(!q)return;
+    var list=revisionTopics();
+    if(!list.length){
+      q.innerHTML='<div class="p-5 rounded-3xl bg-themeCard border border-themeBorder text-center text-themeMuted"><div class="text-xl mb-1">🔁</div><p class="text-xs font-bold">No revision topics yet.</p><p class="text-[10px] mt-1">Mark any chapter as R in Syllabus to add it here.</p></div>';
+    }else{
+      q.innerHTML=list.map(function(item){
+        var s=item.subject,ch=item.chapter;
+        return '<div class="revision-topic-card p-3 rounded-2xl bg-themeCard border border-themeBorder">'
+          +'<div class="flex items-center justify-between gap-3">'
+          +'<div class="min-w-0 flex-1">'
+          +'<div class="text-[9px] font-black uppercase text-themeMuted">'+escR(s.name)+'</div>'
+          +'<div class="revision-topic-name text-xs font-black text-themeText mt-0.5">'+escR(ch.name)+'</div>'
+          +'</div>'
+          +'<button type="button" onclick="openRevisionTaskModal(\''+escR(s.id)+'\',\''+escR(ch.id)+'\')" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-themeAccent text-white text-[9px] font-black active:scale-95 transition">+ Add to Task</button>'
+          +'</div></div>';
+      }).join('');
+    }
+    if(window.lucide)lucide.createIcons();
+  };
+
+  window.openAddTaskModal=function(){
+    revisionTaskContext=null;unlockRevisionFields();
+    if(typeof baseOpenAddTask==='function')baseOpenAddTask();
+    unlockRevisionFields();
+  };
+  window.openEditTaskModal=function(id){
+    revisionTaskContext=null;unlockRevisionFields();
+    if(typeof baseOpenEditTask==='function')baseOpenEditTask(id);
+    unlockRevisionFields();
+  };
+  window.openRevisionTaskModal=function(subId,chId){
+    var item=getRevisionChapter(subId,chId);
+    if(!item||item.chapter.status!=='R'){showToast('Revision topic not found','alert-circle');return;}
+    revisionTaskContext={subjectId:item.subject.id,chapterId:item.chapter.id};
+    if(typeof selectedCalendarDate!=='undefined')selectedCalendarDate=getLocalYMD();
+    unlockRevisionFields();
+    if(typeof baseOpenAddTask==='function')baseOpenAddTask();
+    /* baseOpenAddTask may clear a wrapper context; restore the revision lock context after it finishes. */
+    revisionTaskContext={subjectId:item.subject.id,chapterId:item.chapter.id};
+    var name=document.getElementById('taskInputName');
+    var type=document.getElementById('taskInputType');
+    var subject=document.getElementById('taskInputSubject');
+    if(name)name.value='Revision: '+item.chapter.name;
+    if(type)type.value='standard';
+    if(subject){subject.value=item.subject.id;if(typeof populateTaskChapters==='function')populateTaskChapters();}
+    var chapter=document.getElementById('taskInputChapter');
+    if(chapter)chapter.value=item.chapter.id;
+    lockRevisionFields();
+  };
+  window.saveTask=function(){
+    var ctx=revisionTaskContext;
+    if(ctx){
+      var subject=document.getElementById('taskInputSubject'),chapter=document.getElementById('taskInputChapter');
+      if(subject)subject.value=ctx.subjectId;
+      if(typeof populateTaskChapters==='function')populateTaskChapters();
+      if(chapter)chapter.value=ctx.chapterId;
+    }
+    if(typeof baseSaveTask==='function')baseSaveTask();
+    revisionTaskContext=null;unlockRevisionFields();
+  };
+  window.closeModal=function(id){
+    if(typeof baseCloseModal==='function')baseCloseModal(id);
+    if(id==='taskModal'){revisionTaskContext=null;unlockRevisionFields();}
+  };
+
+  /* No legacy completion/scheduling APIs remain in the new model. */
+  window.advanceSpacedRevision=function(){showToast('Revision Hub uses R markers and Add to Task only');};
+  window.undoRevision=function(){showToast('Revision stages are no longer used');};
+  window.openScheduledRevisionModal=function(){showToast('Mark a chapter R, then use + Add to Task in Revision Hub');};
+  window.saveScheduledRevision=function(){};
+  window.editRevision=function(){};
+
+  document.addEventListener('DOMContentLoaded',function(){
+    try{migrateLegacyRevisionData();}catch(e){console.error('Clean Revision migration',e);}
+    if(typeof window.renderRevisionTab==='function')window.renderRevisionTab();
+  });
+})();
+</script>
+
+
+<style id="trackability-task-repeat-styles">
+  .task-repeat-preset,.task-repeat-custom,.repeat-end-btn{border-color:var(--border-color);background:var(--card-soft);color:var(--text-color);}
+  .task-repeat-preset.active,.task-repeat-custom.active,.repeat-end-btn.active{background:var(--accent-color);border-color:var(--accent-color);color:#fff;}
+  #customRepeatModal select option{background:var(--card-color);color:var(--text-color);}
+  #repeatDayButtons button{border:1px solid var(--border-color);background:var(--card-soft);color:var(--text-color);min-height:48px;border-radius:14px;font-weight:800;font-size:12px;}
+  #repeatDayButtons button.active{background:var(--accent-color);border-color:var(--accent-color);color:#fff;}
+  .custom-repeat-dialog{box-shadow:0 24px 80px rgba(0,0,0,.55);}
+</style>
+<script id="trackability-task-repeat-layer">
+(function(){
+  'use strict';
+  var repeatDraft={mode:'none',interval:1,unit:'day',days:[],endType:'never',endDate:'',count:10};
+  var repeatEditGroup=null;
+  var baseRepeatOpenAdd=window.openAddTaskModal;
+  var baseRepeatOpenEdit=window.openEditTaskModal;
+  var baseRepeatSave=window.saveTask;
+
+  function escT(v){if(typeof window.escapeHtml==='function')return window.escapeHtml(String(v==null?'':v));return String(v==null?'':v);}
+  function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function localDate(value){return new Date((value||ymd(new Date()))+'T00:00:00');}
+  function dayIndex(date){return date.getDay();}
+  function addDays(d,n){var x=new Date(d);x.setDate(x.getDate()+n);return x;}
+  function addMonths(d,n){var x=new Date(d),day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+n);var last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(Math.min(day,last));return x;}
+  function addYears(d,n){var x=new Date(d),m=x.getMonth(),day=x.getDate();x.setDate(1);x.setFullYear(x.getFullYear()+n);x.setMonth(m);var last=new Date(x.getFullYear(),m+1,0).getDate();x.setDate(Math.min(day,last));return x;}
+  function currentTaskDate(){return document.getElementById('taskInputDate')?.value||ymd(new Date());}
+  function freshRepeatForDate(date){return {mode:'none',interval:1,unit:'day',days:[dayIndex(localDate(date))],endType:'never',endDate:'',count:10};}
+  function cloneRepeat(x){return JSON.parse(JSON.stringify(x));}
+  function normalizedRepeat(x,date){
+    x=x||freshRepeatForDate(date);var out=Object.assign(freshRepeatForDate(date),x);
+    out.interval=Math.max(1,Math.min(999,Number(out.interval)||1));
+    out.count=Math.max(1,Math.min(999,Number(out.count)||10));
+    out.days=Array.isArray(out.days)?out.days.map(Number).filter(function(n){return n>=0&&n<=6;}):[];
+    if(out.unit==='week'&&!out.days.length)out.days=[dayIndex(localDate(date))];
+    return out;
+  }
+  function presetConfig(mode,date){
+    var c=freshRepeatForDate(date);c.mode=mode;
+    if(mode==='daily'){c.interval=1;c.unit='day';}
+    else if(mode==='weekly'){c.interval=1;c.unit='week';c.days=[dayIndex(localDate(date))];}
+    else if(mode==='monthly'){c.interval=1;c.unit='month';}
+    return c;
+  }
+  function summary(c,date){
+    if(!c||c.mode==='none')return '';
+    var n=c.interval===1?'Every':'Every '+c.interval;
+    var unit=c.unit+(c.interval===1?'':'s');
+    var text=n+' '+unit;
+    if(c.unit==='week'&&c.days?.length){var names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];text+=' on '+c.days.slice().sort(function(a,b){return a-b;}).map(function(d){return names[d];}).join(', ');}
+    if(c.endType==='date'&&c.endDate)text+=', until '+new Date(c.endDate+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    if(c.endType==='count')text+=', '+c.count+' times';
+    return text;
+  }
+  function updatePresetUI(){
+    document.querySelectorAll('[data-repeat-preset]').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-repeat-preset')===repeatDraft.mode);});
+    var summaryEl=document.getElementById('taskRepeatSummary');
+    if(summaryEl){summaryEl.textContent=summary(repeatDraft,currentTaskDate());summaryEl.classList.toggle('hidden',repeatDraft.mode==='none');}
+  }
+  function renderCustomRepeat(){
+    var c=normalizedRepeat(repeatDraft,currentTaskDate());repeatDraft=c;
+    var num=document.getElementById('repeatEveryNumber');if(num)num.textContent=c.interval;
+    var unit=document.getElementById('repeatEveryUnit');if(unit)unit.value=c.unit;
+    var daysWrap=document.getElementById('repeatDaysSection');if(daysWrap)daysWrap.classList.toggle('hidden',c.unit!=='week');
+    var days=document.getElementById('repeatDayButtons');
+    if(days){var names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];days.innerHTML=names.map(function(name,i){return '<button type="button" onclick="toggleRepeatDay('+i+')" class="'+(c.days.includes(i)?'active ':'')+'">'+name+'</button>';}).join('');}
+    document.querySelectorAll('.repeat-end-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-repeat-end')===c.endType);});
+    var dateWrap=document.getElementById('repeatEndDateWrap');if(dateWrap)dateWrap.classList.toggle('hidden',c.endType!=='date');
+    var date=document.getElementById('repeatEndDate');if(date){date.value=c.endDate||currentTaskDate();date.min=currentTaskDate();}
+    var countWrap=document.getElementById('repeatCountWrap');if(countWrap)countWrap.classList.toggle('hidden',c.endType!=='count');
+    var count=document.getElementById('repeatCountNumber');if(count)count.textContent=c.count;
+    var sum=document.getElementById('repeatCustomSummary');if(sum)sum.textContent=summary(c,currentTaskDate());
+    if(window.lucide)lucide.createIcons();
+  }
+  window.setTaskRepeatPreset=function(mode){
+    repeatDraft=mode==='custom'?normalizedRepeat(repeatDraft,currentTaskDate()):presetConfig(mode,currentTaskDate());
+    if(mode==='custom'){openCustomRepeatModal();return;}
+    updatePresetUI();
+  };
+  window.openCustomRepeatModal=function(){
+    repeatDraft=normalizedRepeat(repeatDraft,currentTaskDate());
+    if(repeatDraft.mode==='none')repeatDraft=presetConfig('weekly',currentTaskDate());
+    repeatDraft.mode='custom';
+    var modal=document.getElementById('customRepeatModal');if(modal)modal.classList.remove('hidden');
+    renderCustomRepeat();
+  };
+  window.closeCustomRepeatModal=function(){var m=document.getElementById('customRepeatModal');if(m)m.classList.add('hidden');};
+  window.adjustRepeatDraft=function(field,delta){
+    if(field==='interval')repeatDraft.interval=Math.max(1,Math.min(999,(Number(repeatDraft.interval)||1)+delta));
+    if(field==='count')repeatDraft.count=Math.max(1,Math.min(999,(Number(repeatDraft.count)||10)+delta));
+    renderCustomRepeat();
+  };
+  window.setRepeatDraftUnit=function(unit){repeatDraft.unit=['day','week','month','year'].includes(unit)?unit:'day';if(repeatDraft.unit==='week'&&!repeatDraft.days.length)repeatDraft.days=[dayIndex(localDate(currentTaskDate()))];renderCustomRepeat();};
+  window.toggleRepeatDay=function(day){var set=new Set(repeatDraft.days||[]);if(set.has(day)){if(set.size===1){showToast('Select at least one day','alert-circle');return;}set.delete(day);}else set.add(day);repeatDraft.days=Array.from(set);renderCustomRepeat();};
+  window.setRepeatEnd=function(type){repeatDraft.endType=type;renderCustomRepeat();};
+  window.saveCustomRepeat=function(){
+    if(repeatDraft.endType==='date'){var d=document.getElementById('repeatEndDate')?.value||'';if(!d){showToast('Choose an end date','alert-circle');return;}if(d<currentTaskDate()){showToast('End date cannot be before the task date','alert-circle');return;}repeatDraft.endDate=d;}
+    if(repeatDraft.unit==='week'&&!repeatDraft.days.length){showToast('Select at least one weekday','alert-circle');return;}
+    repeatDraft.mode='custom';repeatDraft=normalizedRepeat(repeatDraft,currentTaskDate());
+    closeCustomRepeatModal();updatePresetUI();
+  };
+  window.clearTaskRepeat=function(){repeatDraft=freshRepeatForDate(currentTaskDate());updatePresetUI();};
+
+  function initTaskRepeatUI(){
+    repeatDraft=freshRepeatForDate(currentTaskDate());updatePresetUI();
+  }
+  window.openAddTaskModal=function(){
+    if(typeof baseRepeatOpenAdd==='function')baseRepeatOpenAdd();
+    initTaskRepeatUI();
+  };
+  window.openEditTaskModal=function(id){
+    if(typeof baseRepeatOpenEdit==='function')baseRepeatOpenEdit(id);
+    var t=(appState.tasks||[]).find(function(x){return x.id===id;});
+    repeatDraft=t&&t.repeat?normalizedRepeat(t.repeat,t.date):freshRepeatForDate(t?.date||currentTaskDate());
+    repeatEditGroup=t?.repeatGroupId||null;updatePresetUI();
+  };
+  window.saveTask=function(){
+    var editId=document.getElementById('taskEditId')?.value||'';
+    var beforeCount=(appState.tasks||[]).length;
+    if(typeof baseRepeatSave==='function')baseRepeatSave();
+    var t=editId?(appState.tasks||[]).find(function(x){return x.id===editId;}):(appState.tasks||[]).slice(-1)[0];
+    if(!t){repeatDraft=freshRepeatForDate(currentTaskDate());return;}
+    /* Existing edits remain single-occurrence edits. New tasks can create their recurrence set. */
+    if(!editId){
+      var cfg=normalizedRepeat(repeatDraft,t.date);
+      t.repeat=cfg;
+      if(cfg.mode!=='none')materializeRepeatTasks(t,cfg);
+    }
+    saveState();repeatDraft=freshRepeatForDate(currentTaskDate());repeatEditGroup=null;
+  };
+  function occurrenceDates(start,cfg){
+    var out=[],base=localDate(start),limit=cfg.endType==='date'?localDate(cfg.endDate):null,max=cfg.endType==='count'?Math.max(1,cfg.count):365;
+    out.push(new Date(base));
+    if(cfg.mode==='none')return out;
+    var cursor=new Date(base),safety=0;
+    while(out.length<max&&safety<5000){
+      safety++;
+      if(cfg.unit==='day'){
+        cursor=addDays(cursor,cfg.interval);if(limit&&cursor>limit)break;out.push(new Date(cursor));
+      }else if(cfg.unit==='month'){
+        cursor=addMonths(cursor,cfg.interval);if(limit&&cursor>limit)break;out.push(new Date(cursor));
+      }else if(cfg.unit==='year'){
+        cursor=addYears(cursor,cfg.interval);if(limit&&cursor>limit)break;out.push(new Date(cursor));
+      }else{
+        var days=(cfg.days||[dayIndex(base)]).slice().sort(function(a,b){return a-b;}),baseWeek=new Date(base);baseWeek.setDate(baseWeek.getDate()-baseWeek.getDay());
+        cursor=addDays(cursor,1);
+        var candidate=new Date(cursor),weeksFromBase=Math.floor((candidate-baseWeek)/604800000);
+        while(out.length<max&&safety<5000){
+          if(weeksFromBase>=0&&weeksFromBase%cfg.interval===0&&days.indexOf(candidate.getDay())>=0&&candidate>base){
+            if(limit&&candidate>limit)break;out.push(new Date(candidate));
+          }
+          if(limit&&candidate>limit)break;
+          candidate=addDays(candidate,1);safety++;weeksFromBase=Math.floor((candidate-baseWeek)/604800000);
+        }
+        cursor=candidate;
+      }
+    }
+    out.sort(function(a,b){return a-b;});
+    if(cfg.endType==='count')out=out.slice(0,cfg.count);
+    return out;
+  }
+  function materializeRepeatTasks(master,cfg){
+    var group='rep_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);master.repeatGroupId=group;master.repeatIndex=0;
+    var dates=occurrenceDates(master.date,cfg);
+    dates.slice(1).forEach(function(d,i){
+      var exists=(appState.tasks||[]).some(function(x){return x.repeatGroupId===group&&x.repeatIndex===i+1;});if(exists)return;
+      var copy=Object.assign({},master,{id:'tsk_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),date:ymd(d),completed:false,repeatGroupId:group,repeatIndex:i+1});
+      appState.tasks.push(copy);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    var old=document.getElementById('customRepeatModal');if(old)old.addEventListener('click',function(e){if(e.target===old)closeCustomRepeatModal();});
+    initTaskRepeatUI();
+    if(window.lucide)lucide.createIcons();
+  });
+})();
+</script>
+
+</body>
+</html>
