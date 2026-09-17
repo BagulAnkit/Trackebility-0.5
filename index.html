@@ -697,7 +697,7 @@
   </div>
 
   <div id="statsDailySummary" class="space-y-3"></div>
-  <div id="statsMonthGTChart" class="space-y-3"></div>
+  
 </section>
 
   </main>
@@ -5120,5 +5120,345 @@
   });
 })();
 </script>
+
+<style id="trackability-gt-sleep-focus-final-fix-20260917">
+/* ============================================================
+   FINAL GT / SLEEP / TRACKER CALENDAR / FOCUS HISTORY FIX
+   ============================================================ */
+.tb-unified-cal{background:var(--card-color);border:1px solid var(--border-color);border-radius:22px;padding:12px;margin-top:10px;}
+.tb-unified-week{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 1px 5px;}
+.tb-unified-week::-webkit-scrollbar{display:none;}
+.tb-unified-day{flex:0 0 62px;min-height:66px;border:1px solid var(--border-color);background:var(--card-soft);color:var(--text-color);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;}
+.tb-unified-day.selected{background:var(--accent-color);color:#fff;border-color:var(--accent-color);box-shadow:0 5px 18px color-mix(in srgb,var(--accent-color) 28%,transparent);}
+.tb-unified-day.today:not(.selected){border-color:var(--accent-color);color:var(--accent-color);}
+.tb-unified-day .tb-cal-dot{width:5px;height:5px;border-radius:50%;background:var(--accent-color);position:absolute;bottom:6px;}
+.tb-unified-day.selected .tb-cal-dot{background:#fff;}
+.tb-unified-actions{display:flex;justify-content:center;margin-top:7px;}
+.tb-unified-expand{padding:6px 12px;border-radius:12px;background:var(--card-soft);border:1px solid var(--border-color);font-size:9px;font-weight:900;color:var(--accent-color);}
+.tb-unified-month{margin-top:9px;padding-top:9px;border-top:1px solid var(--border-color);}
+.tb-unified-month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
+.tb-unified-month-day{height:34px;border-radius:10px;border:1px solid transparent;background:var(--card-soft);color:var(--text-color);font-size:10px;font-weight:800;}
+.tb-unified-month-day.selected{background:var(--accent-color);color:#fff;}
+.tb-unified-month-day.today:not(.selected){border-color:var(--accent-color);color:var(--accent-color);}
+.tb-unified-month-day.has-data:not(.selected){box-shadow:inset 0 -3px 0 var(--accent-color);}
+
+.tb-gt-chart{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:3px;}
+.tb-gt-chart svg{display:block;min-width:520px;}
+.tb-gt-detail{padding:10px 0;border-top:1px solid var(--border-color);}
+.tb-gt-detail:last-child{border-bottom:0;}
+
+.tb-sleep-chart-box{display:flex;gap:7px;min-height:235px;margin-top:8px;}
+.tb-sleep-yaxis{width:34px;flex:0 0 34px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding:3px 0 27px;color:var(--text-muted);font-size:8px;font-weight:800;}
+.tb-sleep-plot{flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin;}
+.tb-sleep-bars{height:208px;min-width:100%;display:flex;align-items:flex-end;gap:9px;padding:3px 8px 0;border-left:1px solid var(--border-color);border-bottom:1px solid var(--border-color);}
+.tb-sleep-bar-col{flex:0 0 30px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;}
+.tb-sleep-bar{width:22px;min-height:3px;border-radius:7px 7px 3px 3px;box-shadow:0 2px 9px rgba(0,0,0,.16);}
+.tb-sleep-bar.green{background:#22c55e;}
+.tb-sleep-bar.yellow{background:#facc15;}
+.tb-sleep-bar.orange{background:#f97316;}
+.tb-sleep-bar.red{background:#ef4444;}
+.tb-sleep-bar-label{font-size:7px;font-weight:900;margin-bottom:3px;color:var(--text-color);}
+.tb-sleep-date{font-size:8px;font-weight:900;margin-top:5px;color:var(--text-muted);}
+.tb-sleep-legend{display:flex;gap:8px;flex-wrap:wrap;font-size:8px;color:var(--text-muted);font-weight:800;}
+.tb-sleep-legend span{display:inline-flex;align-items:center;gap:3px;}
+.tb-sleep-legend i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.tb-sleep-legend .g{background:#22c55e}.tb-sleep-legend .y{background:#facc15}.tb-sleep-legend .o{background:#f97316}.tb-sleep-legend .r{background:#ef4444;}
+
+#focusHistoryUnifiedCalendar{margin-top:0;}
+</style>
+
+<script id="trackability-gt-sleep-focus-final-fix-js">
+(function(){
+'use strict';
+
+const F=window.escapeHtml||(v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+const P=n=>String(n).padStart(2,'0');
+const Y=d=>`${d.getFullYear()}-${P(d.getMonth()+1)}-${P(d.getDate())}`;
+const D=s=>new Date(String(s)+'T00:00:00');
+const T=()=>Y(new Date());
+const subOf=id=>(appState.subjects||[]).find(s=>s.id===id);
+const monthLabel=d=>d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+
+function weekStart(d){
+  const x=new Date(d); x.setHours(0,0,0,0);
+  const day=x.getDay(); x.setDate(x.getDate()-(day===0?6:day-1));
+  return x;
+}
+function trackerCalState(kind,selected){
+  window.__tbFinalCal=window.__tbFinalCal||{};
+  const base=D(selected||T());
+  if(!window.__tbFinalCal[kind]) window.__tbFinalCal[kind]={cursor:weekStart(base),expanded:false};
+  return window.__tbFinalCal[kind];
+}
+function activityDates(kind,logs){
+  const set=new Set((logs||[]).map(x=>String(x.date||'')).filter(Boolean));
+  return set;
+}
+function finalCalendar(kind,selected,logs){
+  const st=trackerCalState(kind,selected), ws=weekStart(st.cursor), dates=activityDates(kind,logs||[]);
+  let days='';
+  for(let i=0;i<7;i++){
+    const d=new Date(ws);d.setDate(ws.getDate()+i);
+    const date=Y(d), sel=date===selected, today=date===T(), has=dates.has(date);
+    days+=`<button type="button" class="tb-unified-day ${sel?'selected ':''}${today?'today ':''}" onclick="tbFinalSelect('${kind}','${date}')">
+      <span class="text-[8px] uppercase font-black">${d.toLocaleDateString('en-US',{weekday:'short'})}</span>
+      <strong class="text-base">${d.getDate()}</strong>
+      <span class="text-[7px] opacity-80">${d.toLocaleDateString('en-US',{month:'short'})}</span>
+      <span class="tb-cal-dot" style="visibility:${has?'visible':'hidden'}"></span>
+    </button>`;
+  }
+  let expanded='';
+  if(st.expanded){
+    const m=new Date(st.cursor.getFullYear(),st.cursor.getMonth(),1);
+    const first=(m.getDay()+6)%7, nd=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+    let cells='';
+    for(let i=0;i<first;i++)cells+='<span></span>';
+    for(let day=1;day<=nd;day++){
+      const d=new Date(m.getFullYear(),m.getMonth(),day),date=Y(d),sel=date===selected,today=date===T(),has=dates.has(date);
+      cells+=`<button type="button" class="tb-unified-month-day ${sel?'selected ':''}${today?'today ':''}${has?'has-data':''}" onclick="tbFinalSelect('${kind}','${date}')">${day}</button>`;
+    }
+    expanded=`<div class="tb-unified-month">
+      <div class="flex items-center justify-between mb-2">
+        <button type="button" class="tb-calendar-btn" onclick="tbFinalMonth('${kind}',-1)">‹</button>
+        <b class="text-[10px] font-black text-themeAccent">${monthLabel(m)}</b>
+        <button type="button" class="tb-calendar-btn" onclick="tbFinalMonth('${kind}',1)">›</button>
+      </div>
+      <div class="grid grid-cols-7 gap-1 mb-1 text-center text-[7px] font-black text-themeMuted"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+      <div class="tb-unified-month-grid">${cells}</div>
+    </div>`;
+  }
+  return `<div class="tb-unified-cal">
+    <div class="flex items-center justify-between mb-2">
+      <button type="button" class="tb-calendar-btn" onclick="tbFinalWeek('${kind}',-1)">‹</button>
+      <div class="text-center"><b class="text-[10px] font-black text-themeAccent">${monthLabel(ws)}${monthLabel(ws)!==monthLabel(new Date(ws.getFullYear(),ws.getMonth(),ws.getDate()+6))?' – '+monthLabel(new Date(ws.getFullYear(),ws.getMonth(),ws.getDate()+6)):''}</b><div class="text-[8px] text-themeMuted">Week view</div></div>
+      <button type="button" class="tb-calendar-btn" onclick="tbFinalWeek('${kind}',1)">›</button>
+    </div>
+    <div class="tb-unified-week">${days}</div>
+    <div class="tb-unified-actions"><button type="button" class="tb-unified-expand" onclick="tbFinalToggle('${kind}')">${st.expanded?'⌃ Week':'⌄ Expand'}</button></div>
+    ${expanded}
+  </div>`;
+}
+window.tbFinalSelect=function(kind,date){
+  const st=trackerCalState(kind,date); st.cursor=weekStart(D(date));
+  trackerSelectedDate=date;
+  finalRenderTracker(kind);
+};
+window.tbFinalWeek=function(kind,delta){
+  const st=trackerCalState(kind,trackerSelectedDate||T());
+  st.cursor=weekStart(st.cursor);st.cursor.setDate(st.cursor.getDate()+7*Number(delta));
+  trackerSelectedDate=Y(st.cursor);
+  finalRenderTracker(kind);
+};
+window.tbFinalMonth=function(kind,delta){
+  const st=trackerCalState(kind,trackerSelectedDate||T());
+  const m=new Date(st.cursor.getFullYear(),st.cursor.getMonth()+Number(delta),1);
+  st.cursor=weekStart(m);trackerSelectedDate=Y(m);
+  finalRenderTracker(kind);
+};
+window.tbFinalToggle=function(kind){
+  const st=trackerCalState(kind,trackerSelectedDate||T());st.expanded=!st.expanded;finalRenderTracker(kind);
+};
+
+/* ---------- Grand Test: chart belongs ONLY in GT tracker ---------- */
+function gtRecords(){
+  return Array.isArray(appState.grandTests)?appState.grandTests.slice():[];
+}
+function renderGTChartInTracker(records){
+  const el=document.getElementById('gtScoreChart'); if(!el)return;
+  const data=(records||[]).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.id||'').localeCompare(String(b.id||'')));
+  if(!data.length){
+    el.innerHTML='<div class="text-center text-[10px] text-themeMuted py-8">No Grand Tests recorded yet. Log a GT below to see the graph.</div>';return;
+  }
+  const W=Math.max(560,data.length*125),H=300,L=52,R=18,Tp=22,B=78;
+  const max=Math.max(20,...data.map(g=>Number(g.score)||0)),plot=H-Tp-B,slot=(W-L-R)/data.length;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Grand Test score trend">`;
+  svg+=`<line x1="${L}" y1="${Tp}" x2="${L}" y2="${H-B}" stroke="currentColor" opacity=".4"/><line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="currentColor" opacity=".45"/>`;
+  for(let i=0;i<=4;i++){
+    const v=Math.round(max-(max*i/4)), yy=Tp+(plot*i/4);
+    svg+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="currentColor" opacity=".12"/><text x="${L-7}" y="${yy+4}" text-anchor="end" font-size="10" fill="currentColor">${v}</text>`;
+  }
+  data.forEach((g,i)=>{
+    const score=Number(g.score)||0,cx=L+slot*(i+.5),h=Math.max(4,(Math.max(0,score)/max)*plot),y=H-B-h;
+    const label=F(g.name||'Grand Test');
+    svg+=`<rect x="${cx-Math.min(64,slot*.55)/2}" y="${y}" width="${Math.min(64,slot*.55)}" height="${h}" rx="8" fill="var(--accent-color)" opacity=".9"><title>${label} • ${F(g.date||'')} • ${score} marks</title></rect>`;
+    svg+=`<text x="${cx}" y="${y-7}" text-anchor="middle" font-size="11" font-weight="900" fill="currentColor">${score}</text>`;
+    svg+=`<text x="${cx}" y="${H-B+18}" text-anchor="middle" font-size="9" font-weight="900" fill="currentColor">${F(String(g.name||'GT').slice(0,14))}</text>`;
+    svg+=`<text x="${cx}" y="${H-B+33}" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">${F(g.date||'')}</text>`;
+    svg+=`<text x="${cx}" y="${H-B+48}" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">${Number(g.correct||0)} correct</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=`<div class="tb-gt-chart">${svg}</div>`;
+}
+window.renderGTScoreChart=function(records){renderGTChartInTracker(records||gtRecords());};
+window.renderGTTracker=function(){
+  const c=document.getElementById('gtListContainer');if(!c)return;
+  const all=gtRecords().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const best=all.reduce((m,g)=>Math.max(m,Number(g.score)||0),0);
+  const be=document.getElementById('gtBestScoreCard'),ce=document.getElementById('gtTotalCountCard');
+  if(be)be.textContent=best+' marks';if(ce)ce.textContent=String(all.length);
+  renderGTChartInTracker(all);
+  c.innerHTML=all.length?all.map(g=>{
+    const attempted=Number(g.attempted??((Number(g.correct)||0)+(Number(g.wrong)||0)));
+    return `<div class="p-3.5 rounded-2xl bg-themeCard border border-themeBorder space-y-2 tb-gt-detail">
+      <div class="flex justify-between gap-2">
+        <div class="min-w-0"><span class="font-bold text-sm block">${F(g.name||'Grand Test')}</span><span class="text-[9px] text-themeMuted">${F(g.date||'')}${g.platform?' • '+F(g.platform):''}</span></div>
+        <span class="text-base font-black text-themeAccent">${Number(g.score)||0} marks</span>
+      </div>
+      <div class="text-[9px] text-themeMuted">✓ ${Number(g.correct||0)} correct • ✕ ${Number(g.wrong||0)} wrong • ${attempted} attempted • ${Number(g.total||0)} total questions</div>
+      <div class="text-[9px] text-themeMuted">Score calculation: (4 × ${Number(g.correct||0)}) − (1 × ${Number(g.wrong||0)}) = <b class="text-themeText">${Number(g.score)||0}</b></div>
+      <button onclick="undoGT('${F(g.id||'')}')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[9px] font-black">Remove</button>
+    </div>`;
+  }).join(''):'<p class="text-center text-xs text-themeMuted py-6">No Grand Tests recorded yet.</p>';
+  if(window.lucide)lucide.createIcons();
+};
+
+/* ---------- Sleep: stable standalone tracker ---------- */
+function sleepRecords(){return Array.isArray(appState.sleepLogs)?appState.sleepLogs.slice():[];}
+function sleepChartFinal(logs,selected){
+  const d=D(selected||T()),key=Y(new Date(d.getFullYear(),d.getMonth(),1)).slice(0,7);
+  const month=logs.filter(x=>String(x.date||'').slice(0,7)===key);
+  const by={};month.forEach(x=>{const h=Number(x.hours);if(Number.isFinite(h)&&h>=0)by[x.date]=(by[x.date]||0)+h;});
+  const points=Object.keys(by).sort().map(date=>({date,hours:by[date]}));
+  const max=8,ticks=[8,7,6,5,4,3,2,1,0];
+  const bars=points.map(p=>{
+    const h=Math.max(0,p.hours),pct=Math.min(100,h/max*100);
+    const cls=h>=7?'green':h>=6?'yellow':h>=5?'orange':'red';
+    return `<div class="tb-sleep-bar-col" title="${F(p.date)} • ${h.toFixed(1)} hours"><span class="tb-sleep-bar-label">${h.toFixed(1)}</span><div class="tb-sleep-bar ${cls}" style="height:${Math.max(3,pct)}%"></div><span class="tb-sleep-date">${Number(p.date.slice(-2))}</span></div>`;
+  }).join('');
+  const total=points.reduce((a,p)=>a+p.hours,0),avg=points.length?total/points.length:0;
+  return `<div class="rounded-3xl p-3.5 bg-themeCard border border-themeBorder">
+    <div class="flex items-start justify-between gap-3">
+      <div><div class="text-[8px] font-black uppercase text-themeMuted">Sleep • ${monthLabel(d)}</div><div class="text-sm font-black text-themeText mt-1">${total.toFixed(1)} h total</div></div>
+      <div class="text-right"><div class="text-sm font-black text-themeAccent">${avg.toFixed(1)} h</div><div class="text-[8px] text-themeMuted">average / logged day</div></div>
+    </div>
+    <div class="text-[8px] font-black uppercase text-themeMuted mt-3 mb-1">Hours of sleep</div>
+    ${points.length?`<div class="tb-sleep-chart-box"><div class="tb-sleep-yaxis">${ticks.map(v=>`<span>${v}h</span>`).join('')}</div><div class="tb-sleep-plot"><div class="tb-sleep-bars">${bars}</div></div></div>`:'<div class="text-center text-[10px] text-themeMuted py-8">No sleep records in this month.</div>'}
+    <div class="tb-sleep-legend mt-2"><span><i class="g"></i> ≥7h</span><span><i class="y"></i> 6–&lt;7h</span><span><i class="o"></i> 5–&lt;6h</span><span><i class="r"></i> &lt;5h</span></div>
+  </div>`;
+}
+window.renderSleepTracker=function(){
+  const mod=document.getElementById('trackerMod-sleep');if(!mod)return;
+  const logs=sleepRecords().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const selected=trackerSelectedDate||T(),filtered=logs.filter(x=>x.date===selected);
+  let html=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Sleep Ledger</h3><p class="text-[10px] text-themeMuted">Log sleep by date and keep Sleep tasks synchronized.</p></div><button onclick="openAddSleepEntry()" class="px-3 py-1.5 rounded-xl bg-themeAccent text-white text-xs font-bold">+ Log Sleep</button></div>`;
+  html+=finalCalendar('sleep',selected,logs);
+  html+=sleepChartFinal(logs,selected);
+  html+=`<div class="flex items-center justify-between mt-2"><span class="text-[9px] font-black uppercase text-themeMuted">${F(selected)}</span><button onclick="tbFinalShowAll('sleep')" class="text-[9px] font-bold text-themeAccent">Show All</button></div>`;
+  html+=`<div class="space-y-2 mt-2">${filtered.length?filtered.map(l=>`<div class="tracker-log-card"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] font-black uppercase text-themeMuted">${F(l.date)}</div><div class="text-xs font-black text-themeText mt-0.5">😴 ${F(l.sleepTime||'')} • ${Number(l.hours||0).toFixed(1)} hours</div><div class="text-[9px] text-themeMuted mt-1">${F(l.taskName||'Manual Sleep')}</div></div><div class="tracker-log-actions"><button onclick="openEditSleepEntry('${F(l.id)}')" class="text-[9px] font-black text-themeAccent">Edit</button><button onclick="deleteSleepEntry('${F(l.id)}')" class="text-[9px] font-black text-rose-400">Remove</button></div></div></div>`).join(''):'<div class="text-center text-[10px] text-themeMuted py-5">No sleep record for this date.</div>'}</div>`;
+  mod.innerHTML=html;if(window.lucide)lucide.createIcons();
+};
+
+/* ---------- Gym / Reviews / Nutrition: same calendar ---------- */
+window.renderGymTracker=function(){
+  const mod=document.getElementById('trackerMod-gym');if(!mod)return;
+  const logs=(appState.gymLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const selected=trackerSelectedDate||T(),filtered=logs.filter(x=>x.date===selected);
+  mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Workout Ledger</h3><p class="text-[10px] text-themeMuted">Track workouts by date.</p></div><button onclick="openAddGymModal()" class="px-3 py-1.5 rounded-xl bg-themeAccent text-white text-xs font-bold">+ Log Workout</button></div>${finalCalendar('gym',selected,logs)}<div class="flex items-center justify-between mt-2"><span class="text-[9px] font-black uppercase text-themeMuted">${F(selected)}</span><button onclick="tbFinalShowAll('gym')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2 mt-2">${filtered.length?filtered.map(g=>`<div class="p-3 rounded-2xl bg-themeCard border border-themeBorder flex justify-between items-center gap-2 text-xs"><div><span class="font-bold text-themeText">${F(g.split||'Workout')}</span><p class="text-[9px] text-themeMuted mt-0.5">${F(g.date)}</p></div><span class="text-themeAccent font-bold">${g.weight!=null&&g.weight!==''?F(g.weight)+' kg':'Workout'}</span></div>`).join(''):'<p class="text-center text-xs text-themeMuted py-5">No workout recorded for this date.</p>'}</div>`;
+  if(window.lucide)lucide.createIcons();
+};
+window.renderMistakeReviewTracker=function(){
+  const mod=document.getElementById('trackerMod-reviews');if(!mod)return;
+  const logs=(appState.mistakeReviewLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const selected=trackerSelectedDate||T(),filtered=logs.filter(x=>x.date===selected);
+  mod.innerHTML=`<div class="flex justify-between items-center gap-2"><div><h3 class="text-sm font-black">Reviews Ledger</h3><p class="text-[10px] text-themeMuted">Review records stay linked to their Tasks.</p></div><span class="text-[9px] font-black text-themeAccent bg-themeCardSoft px-2 py-1 rounded-lg">${logs.length} total</span></div>${finalCalendar('reviews',selected,logs)}<div class="flex items-center justify-between mt-2"><span class="text-[9px] font-black uppercase text-themeMuted">${F(selected)}</span><button onclick="tbFinalShowAll('reviews')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2 mt-2">${filtered.length?filtered.map(l=>`<div class="tracker-log-card"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><div class="text-[9px] font-black uppercase text-themeMuted">${F(l.date)}</div><div class="text-xs font-black text-themeText mt-0.5">⚠️ ${F(l.title||'Mistake Book Review')}</div></div><div class="tracker-log-actions"><button onclick="editReviewLog('${F(l.id)}')" class="text-[9px] font-black text-themeAccent">Edit</button><button onclick="deleteReviewLog('${F(l.id)}')" class="text-[9px] font-black text-rose-400">Remove</button></div></div></div>`).join(''):'<div class="text-center text-[10px] text-themeMuted py-5">No review record for this date.</div>'}</div>`;
+  if(window.lucide)lucide.createIcons();
+};
+window.renderNutritionTracker=function(){
+  const mod=document.getElementById('trackerMod-nutrition');if(!mod)return;
+  const logs=(appState.nutritionLogs||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const selected=trackerSelectedDate||T(),filtered=logs.filter(x=>x.date===selected);
+  const totalP=logs.reduce((a,x)=>a+Number(x.protein||0),0),totalK=logs.reduce((a,x)=>a+Number(x.kcal||0),0);
+  const avgP=logs.length?totalP/logs.length:0,avgK=logs.length?totalK/logs.length:0;
+  mod.innerHTML=`<div class="rounded-3xl p-4 bg-themeCard border border-themeBorder flex justify-between items-center"><div><h4 class="text-xs font-black uppercase text-themeMuted">Nutrition Ledger</h4><div class="text-xs font-bold text-themeText mt-1">${totalP}g protein • ${totalK} kcal total</div><p class="text-[10px] text-themeMuted">Average: ${avgP.toFixed(0)}g • ${avgK.toFixed(0)} kcal / logged day</p></div><button onclick="openAddNutritionModal()" class="px-3 py-2 rounded-xl bg-themeCardSoft border border-themeBorder text-xs font-bold text-themeAccent">Log Intake</button></div>${finalCalendar('nutrition',selected,logs)}<div class="flex items-center justify-between mt-2"><span class="text-[9px] font-black uppercase text-themeMuted">${F(selected)}</span><button onclick="tbFinalShowAll('nutrition')" class="text-[9px] font-bold text-themeAccent">Show All</button></div><div class="space-y-2 mt-2">${filtered.length?filtered.map(n=>`<div class="p-3 rounded-2xl bg-themeCard border border-themeBorder flex justify-between items-center gap-2 text-xs"><span class="font-bold text-themeText">${F(n.date)}</span><div class="flex items-center gap-2"><span class="text-themeAccent font-bold">${Number(n.protein||0)}g • ${Number(n.kcal||0)} kcal</span><button onclick="openEditNutritionLog('${F(n.id||'')}')" class="text-themeAccent font-bold">Edit</button><button onclick="deleteNutritionLog('${F(n.id||'')}')" class="text-rose-400 font-bold">Remove</button></div></div>`).join(''):'<p class="text-center text-xs text-themeMuted py-5">No nutrition record for this date.</p>'}</div>`;
+  if(window.lucide)lucide.createIcons();
+};
+window.tbFinalShowAll=function(kind){
+  trackerSelectedDate='';
+  const st=trackerCalState(kind,T());st.cursor=weekStart(new Date());st.expanded=false;
+  finalRenderTracker(kind);
+};
+function finalRenderTracker(kind){
+  if(kind==='gt')window.renderGTTracker();
+  else if(kind==='sleep')window.renderSleepTracker();
+  else if(kind==='gym')window.renderGymTracker();
+  else if(kind==='reviews')window.renderMistakeReviewTracker();
+  else if(kind==='nutrition')window.renderNutritionTracker();
+}
+
+/* A clean tracker switcher: old renderers are allowed to fail without preventing the new tracker from showing. */
+window.switchTrackerModule=function(mod){
+  activeTrackerModule=mod;
+  ['mistakes','mcqid','gt','gym','sleep','reviews','nutrition'].forEach(m=>{
+    const el=document.getElementById('trackerMod-'+m);if(el)el.classList.toggle('hidden',m!==mod);
+    const btn=document.getElementById('trkBtn-'+m);
+    if(btn)btn.className=m===mod?'px-3.5 py-1.5 rounded-xl bg-themeAccent text-white text-xs font-bold whitespace-nowrap shadow':'px-3.5 py-1.5 rounded-xl bg-themeCard border border-themeBorder text-xs font-bold text-themeMuted whitespace-nowrap';
+  });
+  try{
+    if(mod==='gt')renderGTTracker();
+    else if(mod==='gym')renderGymTracker();
+    else if(mod==='sleep')renderSleepTracker();
+    else if(mod==='reviews')renderMistakeReviewTracker();
+    else if(mod==='nutrition')renderNutritionTracker();
+    else if(mod==='mcqid'&&typeof renderMcqIdTracker==='function')renderMcqIdTracker();
+    else if(mod==='mistakes'&&typeof renderMistakesTracker==='function')renderMistakesTracker();
+  }catch(e){console.error('Tracker render error',mod,e);}
+  if(window.lucide)lucide.createIcons();
+};
+
+/* ---------- Focus Log & History: same weekday + expandable month calendar ---------- */
+const focusCal={cursor:weekStart(new Date()),expanded:false,selected:T()};
+function focusCalendarHTML(){
+  const selected=focusCal.selected||T(), ws=weekStart(focusCal.cursor), logs=appState.focusSessions||[];
+  const dates=activityDates('focus',logs);
+  let days='';
+  for(let i=0;i<7;i++){
+    const d=new Date(ws);d.setDate(ws.getDate()+i);const date=Y(d);
+    days+=`<button type="button" class="tb-unified-day ${date===selected?'selected ':''}${date===T()?'today ':''}" onclick="tbFocusSelect('${date}')"><span class="text-[8px] uppercase font-black">${d.toLocaleDateString('en-US',{weekday:'short'})}</span><strong class="text-base">${d.getDate()}</strong><span class="text-[7px] opacity-80">${d.toLocaleDateString('en-US',{month:'short'})}</span><span class="tb-cal-dot" style="visibility:${dates.has(date)?'visible':'hidden'}"></span></button>`;
+  }
+  let expanded='';
+  if(focusCal.expanded){
+    const m=new Date(ws.getFullYear(),ws.getMonth(),1),first=(m.getDay()+6)%7,nd=new Date(m.getFullYear(),m.getMonth()+1,0).getDate();
+    let cells='';for(let i=0;i<first;i++)cells+='<span></span>';
+    for(let day=1;day<=nd;day++){const date=Y(new Date(m.getFullYear(),m.getMonth(),day));cells+=`<button type="button" class="tb-unified-month-day ${date===selected?'selected ':''}${date===T()?'today ':''}${dates.has(date)?'has-data':''}" onclick="tbFocusSelect('${date}')">${day}</button>`;}
+    expanded=`<div class="tb-unified-month"><div class="flex items-center justify-between mb-2"><button type="button" class="tb-calendar-btn" onclick="tbFocusMonth(-1)">‹</button><b class="text-[10px] font-black text-themeAccent">${monthLabel(m)}</b><button type="button" class="tb-calendar-btn" onclick="tbFocusMonth(1)">›</button></div><div class="grid grid-cols-7 gap-1 mb-1 text-center text-[7px] font-black text-themeMuted"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><div class="tb-unified-month-grid">${cells}</div></div>`;
+  }
+  return `<div id="focusHistoryUnifiedCalendar" class="tb-unified-cal"><div class="flex items-center justify-between mb-2"><button type="button" class="tb-calendar-btn" onclick="tbFocusWeek(-1)">‹</button><div class="text-center"><b class="text-[10px] font-black text-themeAccent">${monthLabel(ws)}${monthLabel(ws)!==monthLabel(new Date(ws.getFullYear(),ws.getMonth(),ws.getDate()+6))?' – '+monthLabel(new Date(ws.getFullYear(),ws.getMonth(),ws.getDate()+6)):''}</b><div class="text-[8px] text-themeMuted">Week view</div></div><button type="button" class="tb-calendar-btn" onclick="tbFocusWeek(1)">›</button></div><div class="tb-unified-week">${days}</div><div class="tb-unified-actions"><button type="button" class="tb-unified-expand" onclick="tbFocusToggle()">${focusCal.expanded?'⌃ Week':'⌄ Expand'}</button></div>${expanded}</div>`;
+}
+function renderFocusHistoryFinal(){
+  const wrap=document.getElementById('focusSub-history');if(!wrap)return;
+  const selected=focusCal.selected||T();focusCal.cursor=focusCal.cursor||weekStart(D(selected));
+  wrap.innerHTML=`<div class="space-y-3">${focusCalendarHTML()}<div id="focusHistoryDayDetail" class="space-y-1.5 max-h-80 overflow-y-auto custom-scroll"></div></div>`;
+  const sessions=(appState.focusSessions||[]).filter(s=>s.date===selected);
+  const detail=document.getElementById('focusHistoryDayDetail');
+  detail.innerHTML=sessions.length?`<h5 class="text-[11px] font-black uppercase text-themeAccent">${F(selected)} Log</h5>`+sessions.map(s=>{const sub=subOf(s.subjectId);const ch=sub?.chapters?.find(x=>x.id===s.chapterId);return `<div class="p-2 rounded-xl bg-themeCard border border-themeBorder text-xs flex justify-between items-center"><div><span class="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase bg-themeCardSoft">${F(s.type)}</span><span class="font-bold ml-1">${F(sub?.name||'General')}${ch?' • '+F(ch.name):''}</span></div><span class="font-mono font-bold text-themeAccent">${Math.round((Number(s.durationSeconds)||0)/60)} min</span></div>`}).join(''):`<p class="text-[11px] text-themeMuted text-center py-4">No focus activity on ${F(selected)}.</p>`;
+  if(window.lucide)lucide.createIcons();
+}
+window.tbFocusSelect=function(date){focusCal.selected=date;focusCal.cursor=weekStart(D(date));renderFocusHistoryFinal();};
+window.tbFocusWeek=function(delta){focusCal.cursor=weekStart(focusCal.cursor);focusCal.cursor.setDate(focusCal.cursor.getDate()+7*Number(delta));focusCal.selected=Y(focusCal.cursor);renderFocusHistoryFinal();};
+window.tbFocusMonth=function(delta){const m=new Date(focusCal.cursor.getFullYear(),focusCal.cursor.getMonth()+Number(delta),1);focusCal.cursor=weekStart(m);focusCal.selected=Y(m);renderFocusHistoryFinal();};
+window.tbFocusToggle=function(){focusCal.expanded=!focusCal.expanded;renderFocusHistoryFinal();};
+window.renderFocusHistoryTab=renderFocusHistoryFinal;
+/* Inline handlers resolve switchFocusSubTab through window; route History to the new calendar. */
+window.switchFocusSubTab=function(sub){
+  ['today','goals','history'].forEach(function(x){
+    const el=document.getElementById('focusSub-'+x);if(el)el.classList.toggle('hidden',x!==sub);
+    const btn=document.getElementById('focusSubBtn-'+x);
+    if(btn)btn.className=x===sub?'flex-1 py-1.5 text-xs font-bold rounded-xl bg-themeCard text-themeAccent shadow':'flex-1 py-1.5 text-xs font-bold rounded-xl text-themeMuted';
+  });
+  if(sub==='goals'&&typeof renderFocusGoalsTab==='function')renderFocusGoalsTab();
+  if(sub==='history')renderFocusHistoryFinal();
+}; 
+
+/* Initial render / refresh hooks */
+document.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){
+    try{if(typeof activeTrackerModule!=='undefined'&&['gt','gym','sleep','reviews','nutrition'].includes(activeTrackerModule))finalRenderTracker(activeTrackerModule);}catch(e){console.error(e);}
+    try{if(typeof currentTab!=='undefined'&&currentTab==='focus'&&typeof focusSubTab!=='undefined'&&focusSubTab==='history')renderFocusHistoryFinal();}catch(e){}
+    if(window.lucide)lucide.createIcons();
+  },250);
+});
+})();
+</script>
+
 </body>
 </html>
