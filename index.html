@@ -5539,7 +5539,7 @@ document.addEventListener('DOMContentLoaded',function(){
      ============================================================ */
   const SUPABASE_URL = 'https://xsxohmvvyrekemplrlre.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_EgHvOLWCB24PJKfBT9eZJg_mrjYQohJ';
-  const CLOUD_STATE_TABLE = 'app_state';
+  const CLOUD_STATE_TABLE = 'app_data';
   const PROFILE_TABLE = 'profiles';
   const PENDING_MIGRATION_KEY = 'TRACKEBILITY_PENDING_CLOUD_MIGRATION';
 
@@ -5627,14 +5627,23 @@ document.addEventListener('DOMContentLoaded',function(){
     populateAccountUI();
     if(!currentUser || !sb) return;
     try{
-      const {data,error}=await sb.from(PROFILE_TABLE).select('*').eq('user_id',currentUser.id).maybeSingle();
+      const {data,error}=await sb.from(PROFILE_TABLE).select('*').eq('id',currentUser.id).maybeSingle();
       if(error) throw error;
       if(data){
-        appState.cloudProfile={name:data.name||'',age:data.age??'',course:data.course||'NEET PG',exam_date:data.exam_date||''};
+        const uiCourse=(data.course==='INICET'||data.course==='INI-CET')?'INI-CET':'NEET PG';
+        appState.cloudProfile={name:data.name||'',age:data.age??'',course:uiCourse,exam_date:data.exam_date||''};
         appState.profileName=data.name || appState.profileName;
-        appState.course=data.course || appState.course || 'NEET PG';
+        appState.course=uiCourse;
         if(data.exam_date) appState.examDate=data.exam_date;
         saveLocalOnly();
+      } else {
+        // First successful sign-in after email confirmation: create the profile row.
+        const meta=currentUser.user_metadata||{};
+        const name=meta.name || appState.profileName || 'Doctor';
+        const age=meta.age ?? '';
+        const course=(meta.course==='INI-CET'||meta.course==='INICET')?'INI-CET':'NEET PG';
+        const exam_date=meta.exam_date || appState.examDate || '';
+        await saveProfileRow({name,age,course,exam_date});
       }
     }catch(err){
       console.warn('Profile read failed:',err);
@@ -5713,12 +5722,14 @@ document.addEventListener('DOMContentLoaded',function(){
 
   async function saveProfileRow(profile){
     if(!sb || !currentUser) return;
-    const payload={user_id:currentUser.id,name:profile.name||'Doctor',age:profile.age===''||profile.age==null?null:Number(profile.age),course:profile.course==='INI-CET'?'INI-CET':'NEET PG',exam_date:profile.exam_date||null,email:currentUser.email||null,updated_at:new Date().toISOString()};
-    const {error}=await sb.from(PROFILE_TABLE).upsert(payload,{onConflict:'user_id'});
+    const dbCourse=profile.course==='INI-CET' || profile.course==='INICET' ? 'INICET' : 'NEETPG';
+    const payload={id:currentUser.id,name:profile.name||'Doctor',age:profile.age===''||profile.age==null?null:Number(profile.age),course:dbCourse,exam_date:profile.exam_date||null,exam_year:profile.exam_date?Number(String(profile.exam_date).slice(0,4)):null,updated_at:new Date().toISOString()};
+    const {error}=await sb.from(PROFILE_TABLE).upsert(payload,{onConflict:'id'});
     if(error) throw error;
-    appState.cloudProfile={name:payload.name,age:payload.age,course:payload.course,exam_date:payload.exam_date||''};
+    const uiCourse=payload.course==='INICET'?'INI-CET':'NEET PG';
+    appState.cloudProfile={name:payload.name,age:payload.age,course:uiCourse,exam_date:payload.exam_date||''};
     appState.profileName=payload.name;
-    appState.course=payload.course;
+    appState.course=uiCourse;
     if(payload.exam_date) appState.examDate=payload.exam_date;
     saveLocalOnly();
     if(typeof renderHome==='function') renderHome();
