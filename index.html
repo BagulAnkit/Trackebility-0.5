@@ -5063,3 +5063,774 @@
   },1000);
 })();
 </script>
+
+
+<style id="trackability-update8-styles">
+/* ============================================================
+   TRACKEBILITY UPDATE 8 — FINAL USER-REQUESTED POLISH
+   ============================================================ */
+
+/* Better typography scaling: small secondary labels do not stay tiny. */
+body.ui-scale-large .text-\[7px\], body.ui-scale-xlarge .text-\[7px\] { font-size: 9px !important; }
+body.ui-scale-large .text-\[8px\], body.ui-scale-xlarge .text-\[8px\] { font-size: 10px !important; }
+body.ui-scale-large .text-\[9px\], body.ui-scale-xlarge .text-\[9px\] { font-size: 11px !important; }
+body.ui-scale-large .text-\[10px\], body.ui-scale-xlarge .text-\[10px\] { font-size: 12px !important; }
+body.ui-scale-large .text-\[11px\] { font-size: 12.5px !important; }
+body.ui-scale-xlarge .text-\[11px\] { font-size: 13px !important; }
+body.ui-scale-large .text-\[12px\] { font-size: 13.5px !important; }
+body.ui-scale-xlarge .text-\[12px\] { font-size: 14px !important; }
+
+.ui8-repeat-summary{background:color-mix(in srgb,var(--accent-color) 14%,var(--card));border:1px solid color-mix(in srgb,var(--accent-color) 35%,var(--border-color));border-radius:14px;padding:9px 11px;color:var(--text-color);font-size:11px;font-weight:800}
+.ui8-repeat-pill{padding:7px 10px;border-radius:12px;border:1px solid var(--border-color);background:var(--card-soft);color:var(--muted-color);font-weight:800;font-size:11px}
+.ui8-repeat-pill.active{background:var(--accent-color);border-color:var(--accent-color);color:white}
+.ui8-custom-modal{max-height:88vh;overflow-y:auto}
+.ui8-stepper{display:flex;align-items:center;gap:9px}
+.ui8-stepper button{width:34px;height:34px;border-radius:11px;border:1px solid var(--border-color);background:var(--card-soft);color:var(--text-color);font-size:21px;line-height:1}
+.ui8-stepper input{width:60px;text-align:center;padding:8px;border-radius:11px;border:1px solid var(--border-color);background:var(--card-soft);color:var(--text-color);font-weight:900}
+.ui8-day-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.ui8-day-grid button{padding:9px 5px;border-radius:11px;border:1px solid var(--border-color);background:var(--card);color:var(--muted-color);font-weight:800}
+.ui8-day-grid button.active{background:var(--accent-color);border-color:var(--accent-color);color:white}
+.ui8-end-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.ui8-end-grid button{padding:9px 5px;border-radius:11px;border:1px solid var(--border-color);background:var(--card);color:var(--muted-color);font-weight:800}
+.ui8-end-grid button.active{background:color-mix(in srgb,var(--accent-color) 22%,var(--card));border-color:var(--accent-color);color:var(--text-color)}
+.ui8-calendar-current{border:1px solid var(--accent-color)!important;color:var(--accent-color)!important;background:var(--card-soft)!important}
+.ui8-calendar-selected{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent-color) 55%,transparent),0 0 14px var(--accent-glow)!important;border-color:var(--accent-color)!important}
+.ui8-yearbar{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+.ui8-yearbar button{width:28px;height:28px;border-radius:9px;background:var(--card-soft);border:1px solid var(--border-color);color:var(--muted-color)}
+.ui8-yearbar b{font-size:12px;font-weight:900;color:var(--text-color)}
+.ui8-calendar-title{font-size:12px!important;font-weight:900!important;color:var(--accent-color)!important}
+.ui8-locked-field{opacity:.68;position:relative}
+.ui8-locked-field::after{content:'🔒';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;pointer-events:none}
+.ui8-revision-card{border:1px solid var(--border-color);background:var(--card);border-radius:18px;padding:13px}
+.ui8-revision-card:hover{border-color:color-mix(in srgb,var(--accent-color) 55%,var(--border-color))}
+.ui8-revision-topic{font-size:14px;font-weight:900;color:var(--text-color);overflow-wrap:anywhere}
+.ui8-revision-subject{font-size:10px;font-weight:900;color:var(--accent-color);text-transform:uppercase;letter-spacing:.07em}
+</style>
+
+<script id="trackability-update8">
+(function(){
+  'use strict';
+
+  const esc8 = window.escapeHtml || (v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])));
+  const pad8 = n=>String(n).padStart(2,'0');
+  const ymd8 = d=>`${d.getFullYear()}-${pad8(d.getMonth()+1)}-${pad8(d.getDate())}`;
+  const today8 = ()=>getLocalYMD();
+  const mins8 = t=>t&&/^\d{2}:\d{2}$/.test(t)?Number(t.slice(0,2))*60+Number(t.slice(3,5)):null;
+  const fmt8 = t=>t&&typeof formatTime12h==='function'?formatTime12h(t):t||'';
+  const sub8 = id=>(appState.subjects||[]).find(s=>s.id===id);
+  const dayNames8=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  /* ============================================================
+     1) TYPOGRAPHY — scale dynamically-created text too.
+     ============================================================ */
+  function applyTextScale8(){
+    const map={'ui-text-small':.90,'ui-text-normal':1,'ui-text-large':1.12,'ui-text-xlarge':1.24};
+    const scale=map[appState.fontSize||'ui-text-normal']||1;
+    document.querySelectorAll('body *').forEach(el=>{
+      if(el.closest('svg')) return;
+      const tag=el.tagName.toLowerCase();
+      const directText=Array.from(el.childNodes).some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim());
+      const control=['button','input','select','textarea','label','p','h1','h2','h3','h4','h5','h6','a'].includes(tag);
+      if(!directText&&!control)return;
+      if(!el.dataset.ui8BaseFontSize){
+        const cs=getComputedStyle(el).fontSize;
+        if(cs&&cs!=='0px')el.dataset.ui8BaseFontSize=cs;
+      }
+      const base=parseFloat(el.dataset.ui8BaseFontSize);
+      if(Number.isFinite(base))el.style.fontSize=(base*scale).toFixed(2)+'px';
+    });
+  }
+  window.applyGlobalTextScale=applyTextScale8;
+  const scaleObserver8=new MutationObserver(()=>requestAnimationFrame(applyTextScale8));
+  function startScaleObserver8(){if(!document.body||document.body.dataset.ui8ScaleObserver)return;document.body.dataset.ui8ScaleObserver='1';scaleObserver8.observe(document.body,{childList:true,subtree:true});applyTextScale8();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startScaleObserver8);else startScaleObserver8();
+
+  /* ============================================================
+     2) CHAPTER EDITING
+     ============================================================ */
+  function ensureChapterEditModal8(){
+    if(document.getElementById('ui8ChapterEditModal'))return;
+    const m=document.createElement('div');
+    m.id='ui8ChapterEditModal';
+    m.className='hidden fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4';
+    m.innerHTML=`
+      <div class="bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-3 max-h-[90vh] overflow-y-auto custom-scroll">
+        <div class="flex justify-between items-center">
+          <h3 class="text-sm font-black text-themeText">Edit Chapter</h3>
+          <button onclick="closeModal('ui8ChapterEditModal')" class="text-themeMuted"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <input type="hidden" id="ui8ChapterEditSubjectId">
+        <input type="hidden" id="ui8ChapterEditId">
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold text-themeMuted">Chapter Name</label>
+          <input id="ui8ChapterName" type="text" class="w-full p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText focus:outline-none">
+        </div>
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold text-themeMuted">Chapter Description / Notes</label>
+          <input id="ui8ChapterNotes" type="text" class="w-full p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText focus:outline-none">
+        </div>
+        <button onclick="saveEditedChapter8()" class="w-full py-3 rounded-2xl bg-themeAccent text-white text-xs font-bold shadow active:scale-95">Save Chapter</button>
+      </div>`;
+    document.body.appendChild(m);
+    if(window.lucide)lucide.createIcons();
+  }
+
+  window.openEditChapter8=function(subId,chId){
+    ensureChapterEditModal8();
+    const s=sub8(subId),c=s?.chapters?.find(x=>x.id===chId);
+    if(!c)return;
+    document.getElementById('ui8ChapterEditSubjectId').value=subId;
+    document.getElementById('ui8ChapterEditId').value=chId;
+    document.getElementById('ui8ChapterName').value=c.name||'';
+    document.getElementById('ui8ChapterNotes').value=c.notes||'';
+    openModal('ui8ChapterEditModal');
+  };
+
+  window.saveEditedChapter8=function(){
+    const sid=document.getElementById('ui8ChapterEditSubjectId').value;
+    const cid=document.getElementById('ui8ChapterEditId').value;
+    const s=sub8(sid),c=s?.chapters?.find(x=>x.id===cid);
+    const name=document.getElementById('ui8ChapterName').value.trim();
+    if(!c||!name){showToast('Enter a chapter name','alert-circle');return;}
+    c.name=name;
+    c.notes=document.getElementById('ui8ChapterNotes').value.trim();
+    saveState();closeModal('ui8ChapterEditModal');
+    renderSyllabus();
+    if(typeof renderRevisionTab==='function')renderRevisionTab();
+    refreshAllViews();
+    showToast('Chapter updated');
+  };
+
+  const originalRenderSyllabus8=window.renderSyllabus;
+  window.renderSyllabus=function(){
+    if(typeof originalRenderSyllabus8==='function')originalRenderSyllabus8();
+    const list=document.getElementById('syllabusChaptersList');
+    if(!list)return;
+    list.querySelectorAll('[data-ui8-chapter-id]').forEach(x=>x.remove());
+    [...list.children].forEach(card=>{
+      const trash=card.querySelector('button[onclick*="deleteChapter"]');
+      const match=(trash?.getAttribute('onclick')||'').match(/deleteChapter\('([^']+)'\s*,\s*'([^']+)'\)/);
+      if(!match)return;
+      const [_,sid,cid]=match;
+      const wrap=trash.parentElement;
+      if(!wrap)return;
+      const b=document.createElement('button');
+      b.dataset.ui8ChapterId=cid;
+      b.className='text-themeAccent hover:text-themeText p-1';
+      b.title='Edit chapter';
+      b.innerHTML='<i data-lucide="pencil" class="w-3.5 h-3.5"></i>';
+      b.onclick=()=>openEditChapter8(sid,cid);
+      wrap.insertBefore(b,trash);
+    });
+    if(window.lucide)lucide.createIcons();
+    requestAnimationFrame(applyTextScale8);
+  };
+
+  /* ============================================================
+     3) REVISION HUB — ONLY R CHAPTERS + SUBJECT/TOPIC/ADD TO TASK
+     ============================================================ */
+  window.renderRevisionTab=function(){
+    const q=document.getElementById('revisionQueueContainer');
+    if(!q)return;
+    const revisions=[];
+    (appState.subjects||[]).forEach(s=>
+      (s.chapters||[]).forEach(ch=>{
+        if(ch.status==='R')revisions.push({s,ch});
+      })
+    );
+    q.innerHTML='';
+    if(!revisions.length){
+      q.innerHTML='<div class="p-5 text-center text-themeMuted text-xs">No chapters marked <b>R</b> yet. Mark a chapter as R in Syllabus and it will appear here.</div>';
+    }else{
+      revisions.forEach(({s,ch})=>{
+        const card=document.createElement('div');
+        card.className='ui8-revision-card flex items-center justify-between gap-3';
+        card.innerHTML=`
+          <div class="min-w-0 flex-1">
+            <div class="ui8-revision-subject">${esc8(s.name)}</div>
+            <div class="ui8-revision-topic">${esc8(ch.name)}</div>
+          </div>
+          <button class="shrink-0 px-3 py-2 rounded-xl bg-themeAccent text-white text-[10px] font-black active:scale-95" onclick="openRevisionAddTask8('${esc8(s.id)}','${esc8(ch.id)}')">
+            + Add to Task
+          </button>`;
+        q.appendChild(card);
+      });
+    }
+
+    /* Remove the old stage/history/scheduled-topic UI from the visible revision tab. */
+    const revSection=document.getElementById('sylSub-revision');
+    if(revSection){
+      revSection.querySelectorAll('h4').forEach(h=>{if(/spaced revision stages/i.test(h.textContent))h.closest('.space-y-2')?.remove();});
+      const header=revSection.firstElementChild;
+      if(header){
+        const btn=header.querySelector('button');
+        if(btn)btn.remove();
+        const p=header.querySelector('p');
+        if(p)p.textContent='Chapters marked R from Syllabus';
+        const h=header.querySelector('h3');
+        if(h)h.textContent='Revision Hub';
+      }
+      const hist=document.getElementById('revisionHistoryLogContainer');if(hist)hist.remove();
+    }
+    if(window.lucide)lucide.createIcons();
+    requestAnimationFrame(applyTextScale8);
+  };
+
+  /* When R is selected, it appears immediately. No interval/stage logic. */
+  window.setChapterStatus=function(subId,chId,status){
+    const s=sub8(subId),ch=s?.chapters?.find(c=>c.id===chId);
+    if(!ch)return;
+    ch.status=status;
+    /* Legacy stage fields are deliberately ignored from now on. */
+    saveState();
+    renderSyllabus();
+    renderRevisionTab();
+    refreshAllViews();
+    showToast(status==='R'?'Chapter added to Revision Hub':'Chapter status updated');
+  };
+
+  /* Make legacy revision completion/undo harmless: revision tasks are ordinary tasks now. */
+  window.advanceSpacedRevision=function(){ showToast('Revision stages are disabled. Use the task checkbox to complete the revision task.','info'); };
+  window.undoRevision=function(){ showToast('Revision stages are disabled.','info'); };
+
+  /* ============================================================
+     4) REVISION → ADD TO TASK, WITH SUBJECT + CHAPTER LOCKED
+     ============================================================ */
+  let revisionTaskLock8=null;
+
+  window.openRevisionAddTask8=function(subId,chId){
+    const s=sub8(subId),ch=s?.chapters?.find(c=>c.id===chId);
+    if(!s||!ch)return;
+    revisionTaskLock8={subId,chId};
+    repeatConfig8={type:'none'};
+    if(typeof window.openAddTaskModal==='function')window.openAddTaskModal();
+    const title=document.getElementById('taskModalTitle');
+    if(title)title.textContent='Add Revision Task';
+    const name=document.getElementById('taskInputName');if(name){name.value=`Revision: ${ch.name}`;name.focus();}
+    const date=document.getElementById('taskInputDate');if(date)date.value=today8();
+    const sub=document.getElementById('taskInputSubject');
+    const chapter=document.getElementById('taskInputChapter');
+    if(sub){sub.value=subId;sub.disabled=true;sub.classList.add('ui8-locked-field');}
+    if(chapter){if(typeof populateTaskChapters==='function')populateTaskChapters();chapter.value=chId;chapter.disabled=true;chapter.classList.add('ui8-locked-field');}
+    const type=document.getElementById('taskInputType');if(type)type.value='standard';
+  };
+
+  function clearRevisionLock8(){
+    const s=document.getElementById('taskInputSubject'),c=document.getElementById('taskInputChapter');
+    if(s){s.disabled=false;s.classList.remove('ui8-locked-field');}
+    if(c){c.disabled=false;c.classList.remove('ui8-locked-field');}
+    revisionTaskLock8=null;
+  }
+
+  const baseOpenEditTask8=window.openEditTaskModal;
+  window.openEditTaskModal=function(id){
+    clearRevisionLock8();
+    if(typeof baseOpenEditTask8==='function')baseOpenEditTask8(id);
+  };
+
+  const baseOpenAddTask8=window.openAddTaskModal;
+  window.openAddTaskModal=function(){
+    clearRevisionLock8();
+    if(typeof baseOpenAddTask8==='function')baseOpenAddTask8();
+    installRepeatUI8();
+  };
+
+  /* ============================================================
+     5) REPEAT SYSTEM — Daily / Weekly / Monthly / Custom
+     ============================================================ */
+  let repeatConfig8={type:'none'};
+  let repeatUI8Ready=false;
+
+  function normalizeRepeat8(c){
+    c=c||{type:'none'};
+    const out=Object.assign({type:'none',interval:1,unit:'day',weekdays:[],endMode:'never',endDate:'',count:1},c);
+    out.interval=Math.max(1,Number(out.interval)||1);
+    out.count=Math.max(1,Number(out.count)||1);
+    out.weekdays=Array.isArray(out.weekdays)?out.weekdays.map(Number).filter(x=>x>=0&&x<=6):[];
+    return out;
+  }
+  function repeatLabel8(c){
+    c=normalizeRepeat8(c);
+    if(c.type==='none')return 'Does not repeat';
+    if(c.type==='daily')return 'Every day';
+    if(c.type==='weekly')return `Every week on ${dayNames8[(new Date((document.getElementById('taskInputDate')?.value||today8())+'T00:00:00')).getDay()]}`;
+    if(c.type==='monthly')return `Every month on day ${Number((document.getElementById('taskInputDate')?.value||today8()).slice(8,10))}`;
+    let unit=c.unit==='day'?'day':c.unit==='week'?'week':c.unit==='month'?'month':'year';
+    let s=`Every ${c.interval} ${unit}${c.interval===1?'':'s'}`;
+    if(c.unit==='week'&&c.weekdays.length){
+      s+=' on '+c.weekdays.slice().sort((a,b)=>a-b).map(x=>dayNames8[x]).join(', ');
+    }
+    if(c.endMode==='date'&&c.endDate)s+=`, until ${c.endDate}`;
+    if(c.endMode==='count')s+=`, ${c.count} time${c.count===1?'':'s'}`;
+    return s;
+  }
+
+  function installRepeatUI8(){
+    const modal=document.getElementById('taskModal');
+    if(!modal||document.getElementById('ui8RepeatSection'))return;
+    const save=modal.querySelector('button[onclick="saveTask()"]');
+    if(!save)return;
+    const sec=document.createElement('div');
+    sec.id='ui8RepeatSection';
+    sec.className='p-3 rounded-2xl bg-themeCardSoft border border-themeBorder space-y-2';
+    sec.innerHTML=`
+      <div class="flex justify-between items-center gap-2">
+        <span class="text-[10px] font-bold uppercase text-themeMuted">Repeat</span>
+        <span id="ui8RepeatSummary" class="text-[9px] text-themeAccent font-black">Does not repeat</span>
+      </div>
+      <div class="grid grid-cols-4 gap-1.5">
+        <button type="button" data-repeat="none" class="ui8-repeat-pill">None</button>
+        <button type="button" data-repeat="daily" class="ui8-repeat-pill">Daily</button>
+        <button type="button" data-repeat="weekly" class="ui8-repeat-pill">Weekly</button>
+        <button type="button" data-repeat="monthly" class="ui8-repeat-pill">Monthly</button>
+      </div>
+      <button type="button" id="ui8CustomRepeatBtn" class="ui8-repeat-pill w-full text-left">⚙️ Custom</button>`;
+    save.parentElement?.before(sec);
+    sec.querySelectorAll('[data-repeat]').forEach(b=>b.onclick=()=>setBasicRepeat8(b.dataset.repeat));
+    document.getElementById('ui8CustomRepeatBtn').onclick=openCustomRepeat8;
+    repeatUI8Ready=true;
+    syncRepeatUI8();
+  }
+
+  function setBasicRepeat8(type){
+    repeatConfig8=type==='none'?{type:'none'}:{type,interval:1,unit:type==='daily'?'day':type==='weekly'?'week':'month',weekdays:[],endMode:'never',endDate:'',count:1};
+    if(type==='weekly'){
+      const d=new Date((document.getElementById('taskInputDate')?.value||today8())+'T00:00:00');
+      repeatConfig8.weekdays=[d.getDay()];
+    }
+    syncRepeatUI8();
+  }
+
+  function syncRepeatUI8(){
+    installRepeatUI8();
+    const sec=document.getElementById('ui8RepeatSection');if(!sec)return;
+    sec.querySelectorAll('[data-repeat]').forEach(b=>b.classList.toggle('active',b.dataset.repeat===repeatConfig8.type));
+    const custom=document.getElementById('ui8CustomRepeatBtn');
+    if(custom)custom.classList.toggle('active',repeatConfig8.type==='custom');
+    const sum=document.getElementById('ui8RepeatSummary');if(sum)sum.textContent=repeatLabel8(repeatConfig8);
+  }
+
+  function ensureCustomRepeatModal8(){
+    if(document.getElementById('ui8CustomRepeatModal'))return;
+    const m=document.createElement('div');
+    m.id='ui8CustomRepeatModal';
+    m.className='hidden fixed inset-0 z-[75] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4';
+    m.innerHTML=`
+      <div class="ui8-custom-modal bg-themeCard w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 border border-themeBorder space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-base font-black text-themeText">Custom repeat</h3>
+          <button onclick="closeModal('ui8CustomRepeatModal')" class="text-themeMuted"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-themeMuted">Repeat every</label>
+          <div class="flex items-center gap-3">
+            <div class="ui8-stepper"><button type="button" onclick="ui8ChangeRepeatNumber(-1)">−</button><input id="ui8RepeatInterval" type="number" min="1" value="1"><button type="button" onclick="ui8ChangeRepeatNumber(1)">+</button></div>
+            <select id="ui8RepeatUnit" onchange="ui8RepeatUnitChanged()" class="flex-1 p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-sm font-bold text-themeText">
+              <option value="day">day</option><option value="week">week</option><option value="month">month</option><option value="year">year</option>
+            </select>
+          </div>
+        </div>
+        <div id="ui8WeekdayBlock" class="space-y-2">
+          <label class="text-xs font-bold text-themeMuted">Repeat on</label>
+          <div id="ui8WeekdayGrid" class="ui8-day-grid">
+            <button type="button" data-day="0">Sun</button><button type="button" data-day="1">Mon</button><button type="button" data-day="2">Tue</button><button type="button" data-day="3">Wed</button>
+            <button type="button" data-day="4">Thu</button><button type="button" data-day="5">Fri</button><button type="button" data-day="6">Sat</button>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-themeMuted">Ends</label>
+          <div class="ui8-end-grid">
+            <button type="button" data-end="never">Never</button>
+            <button type="button" data-end="date">On a date</button>
+            <button type="button" data-end="count">After a number of times</button>
+          </div>
+          <div id="ui8RepeatEndDateWrap" class="hidden"><input id="ui8RepeatEndDate" type="date" class="w-full p-2.5 rounded-xl bg-themeCardSoft border border-themeBorder text-xs text-themeText"></div>
+          <div id="ui8RepeatCountWrap" class="hidden">
+            <div class="ui8-stepper"><button type="button" onclick="ui8ChangeRepeatCount(-1)">−</button><input id="ui8RepeatCount" type="number" min="1" value="10"><button type="button" onclick="ui8ChangeRepeatCount(1)">+</button><span class="text-sm font-bold text-themeMuted">times</span></div>
+          </div>
+        </div>
+        <div id="ui8CustomRepeatPreview" class="ui8-repeat-summary">Every 1 day</div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" onclick="closeModal('ui8CustomRepeatModal')" class="px-5 py-2.5 rounded-xl text-sm font-bold text-themeMuted">Cancel</button>
+          <button type="button" onclick="saveCustomRepeat8()" class="px-5 py-2.5 rounded-xl bg-themeAccent text-white text-sm font-black">Done</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    m.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>{const d=Number(b.dataset.day);const a=normalizeRepeat8(repeatConfig8);a.weekdays=a.weekdays.includes(d)?a.weekdays.filter(x=>x!==d):a.weekdays.concat(d);repeatConfig8=a;renderCustomRepeatControls8();});
+    m.querySelectorAll('[data-end]').forEach(b=>b.onclick=()=>{repeatConfig8.endMode=b.dataset.end;renderCustomRepeatControls8();});
+    if(window.lucide)lucide.createIcons();
+  }
+
+  function renderCustomRepeatControls8(){
+    ensureCustomRepeatModal8();
+    const c=normalizeRepeat8(repeatConfig8);
+    const unit=document.getElementById('ui8RepeatUnit'),interval=document.getElementById('ui8RepeatInterval'),count=document.getElementById('ui8RepeatCount'),date=document.getElementById('ui8RepeatEndDate');
+    if(unit)unit.value=c.unit;if(interval)interval.value=c.interval;if(count)count.value=c.count;if(date)date.value=c.endDate||'';
+    const week=document.getElementById('ui8WeekdayBlock');if(week)week.classList.toggle('hidden',c.unit!=='week');
+    document.querySelectorAll('#ui8WeekdayGrid [data-day]').forEach(b=>b.classList.toggle('active',c.weekdays.includes(Number(b.dataset.day))));
+    document.querySelectorAll('#ui8CustomRepeatModal [data-end]').forEach(b=>b.classList.toggle('active',b.dataset.end===c.endMode));
+    document.getElementById('ui8RepeatEndDateWrap')?.classList.toggle('hidden',c.endMode!=='date');
+    document.getElementById('ui8RepeatCountWrap')?.classList.toggle('hidden',c.endMode!=='count');
+    const p=document.getElementById('ui8CustomRepeatPreview');if(p)p.textContent=repeatLabel8(c);
+  }
+
+  window.ui8ChangeRepeatNumber=function(delta){
+    repeatConfig8=normalizeRepeat8(repeatConfig8);
+    repeatConfig8.interval=Math.max(1,repeatConfig8.interval+delta);
+    renderCustomRepeatControls8();
+  };
+  window.ui8ChangeRepeatCount=function(delta){
+    repeatConfig8=normalizeRepeat8(repeatConfig8);
+    repeatConfig8.count=Math.max(1,repeatConfig8.count+delta);
+    renderCustomRepeatControls8();
+  };
+  window.ui8RepeatUnitChanged=function(){
+    repeatConfig8=normalizeRepeat8(repeatConfig8);
+    repeatConfig8.unit=document.getElementById('ui8RepeatUnit').value;
+    if(repeatConfig8.unit==='week'&&!repeatConfig8.weekdays.length){
+      const d=new Date((document.getElementById('taskInputDate')?.value||today8())+'T00:00:00');repeatConfig8.weekdays=[d.getDay()];
+    }
+    renderCustomRepeatControls8();
+  };
+  window.openCustomRepeat8=function(){
+    ensureCustomRepeatModal8();
+    repeatConfig8=normalizeRepeat8(repeatConfig8.type==='custom'?repeatConfig8:{type:'custom',interval:1,unit:'week',weekdays:[new Date((document.getElementById('taskInputDate')?.value||today8())+'T00:00:00').getDay()],endMode:'never',endDate:'',count:10});
+    repeatConfig8.type='custom';
+    renderCustomRepeatControls8();
+    openModal('ui8CustomRepeatModal');
+  };
+  window.saveCustomRepeat8=function(){
+    repeatConfig8=normalizeRepeat8(repeatConfig8);repeatConfig8.type='custom';
+    if(repeatConfig8.unit==='week'&&!repeatConfig8.weekdays.length){showToast('Select at least one weekday','alert-circle');return;}
+    repeatConfig8.endDate=document.getElementById('ui8RepeatEndDate')?.value||'';
+    repeatConfig8.count=Math.max(1,Number(document.getElementById('ui8RepeatCount')?.value)||1);
+    syncRepeatUI8();closeModal('ui8CustomRepeatModal');
+  };
+
+  function generateRepeatDates8(startDate,cfg){
+    cfg=normalizeRepeat8(cfg);
+    if(cfg.type==='none')return [startDate];
+    const start=new Date(startDate+'T00:00:00');if(isNaN(start))return [startDate];
+    const out=[new Date(start)];
+    const max=cfg.endMode==='count'?cfg.count:366;
+    const until=cfg.endMode==='date'&&cfg.endDate?new Date(cfg.endDate+'T00:00:00'):null;
+    const push=d=>{
+      if(until&&d>until)return false;
+      if(d<=start)return true;
+      out.push(new Date(d));return out.length<max;
+    };
+    if(cfg.type==='daily'||(cfg.type==='custom'&&cfg.unit==='day')){
+      let d=new Date(start);
+      while(out.length<max){d.setDate(d.getDate()+cfg.interval);if(!push(d))break;}
+    }else if(cfg.type==='weekly'||(cfg.type==='custom'&&cfg.unit==='week')){
+      const weekdays=(cfg.weekdays&&cfg.weekdays.length?cfg.weekdays:[start.getDay()]).slice().sort((a,b)=>a-b);
+      let weekStart=new Date(start);weekStart.setDate(weekStart.getDate()-weekStart.getDay()); // Sunday based
+      let weekIndex=0;
+      while(out.length<max){
+        weekIndex+=cfg.interval;
+        for(const wd of weekdays){
+          const d=new Date(weekStart);d.setDate(weekStart.getDate()+weekIndex*7+wd);
+          if(d<=start)continue;
+          if(!push(d))return out.map(x=>ymd8(x));
+          if(out.length>=max)break;
+        }
+      }
+    }else if(cfg.type==='monthly'||(cfg.type==='custom'&&cfg.unit==='month')){
+      let i=1;
+      while(out.length<max){
+        const d=new Date(start);d.setMonth(start.getMonth()+i*cfg.interval);d.setDate(Math.min(start.getDate(),new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));if(!push(d))break;i++;
+      }
+    }else if(cfg.type==='custom'&&cfg.unit==='year'){
+      let i=1;
+      while(out.length<max){
+        const d=new Date(start);d.setFullYear(start.getFullYear()+i*cfg.interval);if(!push(d))break;i++;
+      }
+    }
+    return out.map(x=>ymd8(x));
+  }
+
+  function materializeRecurrence8(master){
+    if(!master?.recurrence||master.recurrence.type==='none')return;
+    const dates=generateRepeatDates8(master.date,master.recurrence);
+    const existing=new Set((appState.tasks||[]).filter(t=>t.recurrenceGroupId===master.recurrenceGroupId).map(t=>t.date));
+    dates.forEach((date,i)=>{
+      if(i===0||existing.has(date))return;
+      const copy=Object.assign({},master,{id:'tsk_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),date,completed:false,trackerLogged:false,recurrenceGroupId:master.recurrenceGroupId,recurrenceIndex:i});
+      delete copy.recurrence;
+      copy.recurrence=Object.assign({},master.recurrence);
+      appState.tasks.push(copy);
+    });
+  }
+
+  /* Wrap the currently active saveTask so recurrence is captured and generated. */
+  const baseSaveTask8=window.saveTask;
+  window.saveTask=function(){
+    const editId=document.getElementById('taskEditId')?.value||'';
+    const repeatBefore=normalizeRepeat8(repeatConfig8);
+    const locked=revisionTaskLock8?Object.assign({},revisionTaskLock8):null;
+    if(locked){
+      const s=document.getElementById('taskInputSubject'),c=document.getElementById('taskInputChapter');
+      if(s)s.disabled=false;if(c)c.disabled=false;
+      /* disabled form controls are otherwise excluded from normal value reads */
+      if(s)s.value=locked.subId;if(c)c.value=locked.chId;
+    }
+    if(typeof baseSaveTask8==='function')baseSaveTask8();
+    if(locked)clearRevisionLock8();
+    if(!editId){
+      const master=appState.tasks?.[appState.tasks.length-1];
+      if(master){
+        master.recurrence=repeatBefore;
+        if(repeatBefore.type!=='none'){
+          master.recurrenceGroupId=master.id;
+          master.recurrenceIndex=0;
+          materializeRecurrence8(master);
+        }
+        saveState();
+      }
+    }else{
+      const t=(appState.tasks||[]).find(x=>x.id===editId);
+      if(t){
+        t.recurrence=repeatBefore;
+        saveState();
+      }
+    }
+    syncRepeatUI8();
+    requestAnimationFrame(()=>{renderHomeTasksFinal?.();renderTasksTab?.();applyTextScale8();});
+  };
+
+  /* Make task modal opening/reset load the recurrence correctly. */
+  function resetRepeatForNew8(){repeatConfig8={type:'none'};setTimeout(syncRepeatUI8,0);}
+  document.addEventListener('click',e=>{
+    const b=e.target.closest?.('button[onclick="openAddTaskModal()"]');
+    if(b)setTimeout(resetRepeatForNew8,20);
+  });
+
+  const baseOpenEditTask8b=window.openEditTaskModal;
+  window.openEditTaskModal=function(id){
+    clearRevisionLock8();
+    if(typeof baseOpenEditTask8b==='function')baseOpenEditTask8b(id);
+    const t=(appState.tasks||[]).find(x=>x.id===id);
+    repeatConfig8=normalizeRepeat8(t?.recurrence||{type:'none'});
+    setTimeout(syncRepeatUI8,0);
+  };
+
+  /* ============================================================
+     6) HOME TASKS — live Ongoing / Next Up, one source of truth
+     ============================================================ */
+  function renderHomeTasks8(){
+    const section=document.getElementById('homeTasksUnifiedBox')||document.getElementById('homeEnlargedTasksList')?.closest('.rounded-3xl');
+    if(!section)return;
+    section.id='homeTasksUnifiedBox';
+    const date=today8();
+    const tasks=(appState.tasks||[]).filter(t=>String(t.date||'')===date).sort((a,b)=>(mins8(a.startTime)??1440)-(mins8(b.startTime)??1440));
+    const now=new Date(),nowM=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+    const pending=tasks.filter(t=>!t.completed);
+    const ongoing=pending.filter(t=>{const s=mins8(t.startTime),e=mins8(t.endTime);return s!==null&&e!==null&&s<=nowM&&nowM<e;}).sort((a,b)=>mins8(a.startTime)-mins8(b.startTime))[0]||null;
+    const next=pending.filter(t=>{const s=mins8(t.startTime);return s!==null&&s>nowM;}).sort((a,b)=>mins8(a.startTime)-mins8(b.startTime))[0]||pending.find(t=>mins8(t.startTime)===null)||null;
+    const done=tasks.filter(t=>t.completed).length;
+    const row=t=>{const s=sub8(t.subjectId);const time=t.startTime?(fmt8(t.startTime)+(t.endTime?' – '+fmt8(t.endTime):'')):'All Day';return `<div class="home-task-row flex items-start gap-2.5 min-w-0"><button class="home-task-check w-5 h-5 mt-0.5 rounded-lg border flex items-center justify-center shrink-0 ${t.completed?'bg-emerald-500 border-emerald-500 text-white':'border-themeMuted text-themeMuted'}" onclick="toggleTaskDone('${esc8(t.id)}')">${t.completed?'<i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>':''}</button><div class="home-task-main min-w-0 flex-1"><div class="home-task-name text-xs font-black ${t.completed?'line-through text-themeMuted':'text-themeText'}">${esc8(t.name)}</div><div class="flex items-center gap-2 flex-wrap text-[9px] text-themeMuted mt-1"><span>⏱ ${esc8(time)}</span>${s?`<span class="font-bold" style="color:${esc8(s.color||'var(--accent-color)')}">[${esc8(s.symbol||s.name.slice(0,2).toUpperCase())}]</span>`:''}</div></div></div>`;};
+    section.innerHTML=`
+      <div class="flex items-center justify-between gap-3"><div class="min-w-0 flex items-center gap-2"><h4 class="text-xs font-black uppercase tracking-wider text-themeText">Today's Tasks & Schedule</h4><span id="homeTodayTasksCountBadge" class="text-[9px] font-black text-themeAccent bg-themeCardSoft px-2 py-0.5 rounded-full whitespace-nowrap">${done}/${tasks.length} DONE</span></div><button onclick="openAddTaskModal()" class="shrink-0 p-1.5 rounded-xl bg-themeCardSoft border border-themeBorder text-themeAccent" title="Add Task"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button></div>
+      <div class="mt-3"><div class="home-section-label mb-1.5">ONGOING TASK</div>${ongoing?`<div class="home-ongoing-row">${row(ongoing)}</div>`:'<div class="home-empty">No task is currently ongoing.</div>'}<div class="home-next-row"><div class="home-section-label mb-1.5">NEXT UP</div>${next?`<div>${row(next)}</div>`:`<div class="home-empty">${tasks.length&&done===tasks.length?'All tasks completed 🎉':'No more scheduled tasks today.'}</div>`}</div></div>
+      <div class="flex items-center justify-center gap-4 pt-2"><button class="home-small-link" onclick="switchTab('tasks')">View all →</button><button class="home-small-link" onclick="openSchedulePanel('timeline')">Timeblock →</button></div>`;
+    if(window.lucide)lucide.createIcons();
+    requestAnimationFrame(applyTextScale8);
+  }
+  window.renderHomeTasksFinal=renderHomeTasks8;
+  window.renderHomeUnifiedTasksFinal=renderHomeTasks8;
+
+  const baseToggleTask8=window.toggleTaskDone;
+  window.toggleTaskDone=function(id){
+    const t=(appState.tasks||[]).find(x=>x.id===id);
+    if(t?.revisionId){
+      /* Treat old revision tasks as ordinary tasks; no stage advancement. */
+      const rid=t.revisionId;delete t.revisionId;
+      if(typeof baseToggleTask8==='function')baseToggleTask8(id);
+      t.revisionId=rid;
+      setTimeout(()=>{renderHomeTasks8();renderTasksTab?.();},0);
+      return;
+    }
+    if(typeof baseToggleTask8==='function')baseToggleTask8(id);
+    setTimeout(()=>renderHomeTasks8(),0);
+  };
+
+  /* ============================================================
+     7) TASKS CALENDAR — WEEK STRIP + EXPAND MONTH, dynamic years
+     ============================================================ */
+  let taskExpanded8=false;
+  let taskWeekCursor8=new Date((typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:today8())+'T00:00:00');
+  function startWeek8(d){const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()+(day===0?-6:1-day));x.setHours(0,0,0,0);return x;}
+
+  window.renderTaskMonthCalendar=function(){
+    const grid=document.getElementById('taskEnlargedMonthGrid'),label=document.getElementById('taskMonthLabel');if(!grid||!label)return;
+    const selected= new Date(((typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:today8()))+'T00:00:00');
+    if(!taskWeekCursor8||isNaN(taskWeekCursor8.getTime()))taskWeekCursor8=new Date(selected);
+    grid.innerHTML='';
+    if(!taskExpanded8){
+      const ws=startWeek8(taskWeekCursor8),dates=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(ws.getDate()+i);return d;}),end=dates[6];
+      label.textContent=ws.getFullYear()===end.getFullYear()?`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`:`${ws.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} – ${end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+      dates.forEach(d=>{
+        const date=ymd8(d),tasks=(appState.tasks||[]).filter(t=>t.date===date),sel=date===(typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:today8()),today=date===today8(),done=tasks.length&&tasks.every(t=>t.completed);
+        const cls=sel?'bg-themeAccent text-white ui8-calendar-selected':today?'ui8-calendar-current':'bg-themeCardSoft text-themeText';
+        grid.innerHTML+=`<button onclick="selectedCalendarDate='${date}';taskWeekCursor8=new Date('${date}T00:00:00');renderTasksTab()" class="h-12 rounded-xl ${cls} flex flex-col items-center justify-center"><span class="text-[10px] font-black">${dayNames8[d.getDay()]}</span><span class="text-[9px] font-black">${d.getDate()} ${d.toLocaleDateString('en-US',{month:'short'})}</span><span class="text-[8px]">${tasks.length?tasks.length+' task'+(tasks.length>1?'s':''):''}${done?' ✓':''}</span></button>`;
+      });
+    }else{
+      const y=selected.getFullYear(),m=selected.getMonth(),first=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+      label.textContent=selected.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      for(let i=0;i<first;i++)grid.innerHTML+='<span></span>';
+      for(let d=1;d<=days;d++){
+        const date=`${y}-${pad8(m+1)}-${pad8(d)}`,tasks=(appState.tasks||[]).filter(t=>t.date===date),sel=date===(typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:today8()),today=date===today8(),done=tasks.length&&tasks.every(t=>t.completed);
+        const cls=sel?'bg-themeAccent text-white ui8-calendar-selected':today?'ui8-calendar-current':'bg-themeCardSoft text-themeText';
+        grid.innerHTML+=`<button onclick="selectedCalendarDate='${date}';taskWeekCursor8=new Date('${date}T00:00:00');renderTasksTab()" class="h-9 rounded-xl ${cls} flex flex-col items-center justify-center"><span class="text-[10px] font-black">${d}</span><span class="text-[8px]">${tasks.length?tasks.length:''}</span>${done?'<span class="text-[8px]">✓</span>':''}</button>`;
+      }
+    }
+    let toggle=document.getElementById('taskWeekExpandBtn');
+    if(!toggle){
+      const top=grid.parentElement?.querySelector('.flex.justify-between.items-center');
+      if(top){toggle=document.createElement('button');toggle.id='taskWeekExpandBtn';top.appendChild(toggle);}
+    }
+    if(toggle){toggle.className='px-2.5 py-1 rounded-lg bg-themeCardSoft border border-themeBorder text-[9px] font-black text-themeAccent inline-flex items-center gap-1';toggle.innerHTML=taskExpanded8?'<i data-lucide="calendar-range" class="w-3 h-3"></i><span>Week</span>':'<i data-lucide="maximize-2" class="w-3 h-3"></i><span>Expand</span>';toggle.onclick=()=>{taskExpanded8=!taskExpanded8;window.__trackabilityTaskCalendarExpanded=taskExpanded8;renderTaskMonthCalendar();};}
+    if(window.lucide)lucide.createIcons();
+    requestAnimationFrame(applyTextScale8);
+  };
+  window.shiftTaskMonth=function(delta){
+    const base=new Date(((typeof selectedCalendarDate!=='undefined'?selectedCalendarDate:today8()))+'T00:00:00');
+    if(taskExpanded8)base.setMonth(base.getMonth()+Number(delta||0));else base.setDate(base.getDate()+7*Number(delta||0));
+    if(typeof selectedCalendarDate!=='undefined')selectedCalendarDate=ymd8(base);
+    taskWeekCursor8=new Date(base);
+    renderTasksTab();
+  };
+  window.jumpToTaskTodayMonth=function(){if(typeof selectedCalendarDate!=='undefined')selectedCalendarDate=today8();taskWeekCursor8=new Date();renderTasksTab();};
+
+  /* ============================================================
+     8) FOCUS HISTORY — selected month/year clearly distinct from current
+     ============================================================ */
+  let focusHistoryYear8=new Date().getFullYear(),focusHistoryMonth8=new Date().getMonth();
+
+  window.renderFocusHistoryTab=function(){
+    const monthContainer=document.getElementById('historyMonthList');if(!monthContainer)return;
+    const now=new Date(),curY=now.getFullYear(),curM=now.getMonth();
+    if(!Number.isFinite(focusHistoryYear8))focusHistoryYear8=curY;
+    monthContainer.innerHTML=`
+      <div class="ui8-yearbar">
+        <button onclick="changeFocusHistoryYear8(-1)">‹</button>
+        <b id="ui8FocusHistoryYear">${focusHistoryYear8}</b>
+        <button onclick="changeFocusHistoryYear8(1)">›</button>
+      </div>`;
+    ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].forEach((m,idx)=>{
+      const b=document.createElement('button');
+      const isSelected=idx===focusHistoryMonth8;
+      const isCurrent=idx===curM&&focusHistoryYear8===curY;
+      b.className=`w-full py-2 rounded-xl text-xs font-bold text-center border ${isSelected?'ui8-calendar-selected bg-themeCardSoft text-themeText':'bg-themeCard border-themeBorder text-themeMuted'} ${isCurrent?'ui8-calendar-current':''}`;
+      b.textContent=m;
+      b.onclick=()=>{focusHistoryMonth8=idx;renderHistoryMiniCalendar8(idx,focusHistoryYear8);renderFocusHistoryTab();};
+      monthContainer.appendChild(b);
+    });
+    renderHistoryMiniCalendar8(focusHistoryMonth8,focusHistoryYear8);
+  };
+
+  window.changeFocusHistoryYear8=function(delta){
+    focusHistoryYear8+=Number(delta||0);
+    renderFocusHistoryTab();
+  };
+
+  window.renderHistoryMiniCalendar=function(monthIdx,yearArg){
+    focusHistoryMonth8=Number(monthIdx);if(yearArg!=null)focusHistoryYear8=Number(yearArg);
+    renderHistoryMiniCalendar8(focusHistoryMonth8,focusHistoryYear8);
+  };
+
+  function renderHistoryMiniCalendar8(monthIdx,year){
+    const container=document.getElementById('historyMiniCalendar');if(!container)return;
+    const title=container.parentElement?.parentElement?.querySelector('.ui8-calendar-title, span.text-\\[10px\\]');
+    if(title)title.textContent=new Date(year,monthIdx,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    container.innerHTML='';
+    const first=(new Date(year,monthIdx,1).getDay()+6)%7,days=new Date(year,monthIdx+1,0).getDate();
+    for(let i=0;i<first;i++)container.innerHTML+='<span></span>';
+    for(let day=1;day<=days;day++){
+      const date=`${year}-${pad8(monthIdx+1)}-${pad8(day)}`,has=(appState.focusSessions||[]).some(s=>s.date===date),today=date===today8();
+      const b=document.createElement('button');
+      b.className=`p-1 rounded-lg text-center ${has?'bg-themeAccent text-white font-black':'text-themeMuted hover:bg-themeCardSoft'} ${today?'ui8-calendar-current':''}`;
+      b.textContent=day;b.onclick=()=>showHistoryForDay(date);container.appendChild(b);
+    }
+    const head=container.closest('.flex-1')?.querySelector('span.text-\\[10px\\]');
+    if(head)head.textContent=new Date(year,monthIdx,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    requestAnimationFrame(applyTextScale8);
+  }
+
+  /* ============================================================
+     9) GOAL CALENDAR — explicit selected month/year label
+     ============================================================ */
+  const oldGoalRender8=window.renderMonthlyShadedGrid;
+  window.renderMonthlyShadedGrid=function(){
+    if(typeof oldGoalRender8==='function')oldGoalRender8();
+    const label=document.getElementById('goalTrackingMonthLabel');
+    if(label){
+      label.classList.add('ui8-calendar-title','px-2','py-1','rounded-lg','border','border-themeBorder');
+    }
+    requestAnimationFrame(applyTextScale8);
+  };
+
+  /* ============================================================
+     10) INLINE TRACKER CALENDARS — selected/current/year distinction
+     ============================================================ */
+  const oldMonthCalendarHTML8=window.monthCalendarHTML;
+  /* monthCalendarHTML is lexical in the previous script, so style its rendered output instead. */
+  function refreshInlineCalendarVisuals8(){
+    document.querySelectorAll('.tracker-inline-month').forEach(card=>{
+      const title=card.querySelector('b');
+      if(title){
+        title.classList.add('ui8-calendar-title','px-2','py-1','rounded-lg','border','border-themeBorder');
+      }
+      card.querySelectorAll('.month-day').forEach(b=>{
+        if(b.classList.contains('selected'))b.classList.add('ui8-calendar-selected');
+        if(b.classList.contains('today'))b.classList.add('ui8-calendar-current');
+      });
+    });
+  }
+
+  /* ============================================================
+     11) SEARCH — revision results no longer expose old stages
+     ============================================================ */
+  const baseSearch8=window.runGlobalSearch;
+  window.runGlobalSearch=function(raw){
+    if(typeof baseSearch8==='function')baseSearch8(raw);
+    const c=document.getElementById('globalSearchResults');if(!c)return;
+    c.querySelectorAll('button').forEach(b=>{
+      const type=b.querySelector('span.text-\\[8px\\]');
+      if(type&&/revision/i.test(type.textContent)){
+        const sub=b.querySelector('span.block');
+        if(sub)sub.textContent='Revision topic';
+      }
+    });
+  };
+
+  /* ============================================================
+     12) INIT + live refresh
+     ============================================================ */
+  function initUpdate8(){
+    ensureChapterEditModal8();
+    installRepeatUI8();
+    repeatConfig8={type:'none'};
+    syncRepeatUI8();
+    if(typeof renderRevisionTab==='function')renderRevisionTab();
+    if(typeof renderSyllabus==='function')renderSyllabus();
+    if(typeof renderTaskMonthCalendar==='function')renderTaskMonthCalendar();
+    if(typeof renderHomeTasks8==='function')renderHomeTasks8();
+    refreshInlineCalendarVisuals8();
+    requestAnimationFrame(applyTextScale8);
+    if(window.lucide)lucide.createIcons();
+  }
+  document.addEventListener('DOMContentLoaded',()=>setTimeout(initUpdate8,60));
+  setInterval(()=>{
+    try{
+      if(typeof currentTab!=='undefined'&&currentTab==='home')renderHomeTasks8();
+      if(typeof currentTab!=='undefined'&&currentTab==='syllabus'){
+        const rev=document.getElementById('sylSub-revision');if(rev&&!rev.classList.contains('hidden'))renderRevisionTab();
+      }
+      refreshInlineCalendarVisuals8();
+      applyTextScale8();
+    }catch(e){}
+  },1000);
+
+})();
+</script>
